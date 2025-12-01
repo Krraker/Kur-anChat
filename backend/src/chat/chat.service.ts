@@ -77,7 +77,7 @@ export class ChatService {
         text_tr: v.text_tr,
       })),
       disclaimer:
-        'Bu yanıt ChatGPT ve Kuran ayetlerine dayanmaktadır. Daha detaylı bilgi için İslam alimlerine danışabilirsiniz.',
+        'Daha detaylı bilgi için İslam alimlerine danışabilirsiniz.',
     };
 
     // Step 7: Save assistant response

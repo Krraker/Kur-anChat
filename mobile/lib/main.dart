@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'screens/chat_screen.dart';
+import 'screens/main_navigation.dart';
 import 'providers/chat_provider.dart';
 import 'services/api_service.dart';
 
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
           textTheme: GoogleFonts.interTextTheme(),
           scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         ),
-        home: const ChatScreen(),
+        home: const MainNavigation(),
       ),
     );
   }
