@@ -1,0 +1,4 @@
+# Prisma migrations will be generated here
+# Run: npx prisma migrate dev
+
+
