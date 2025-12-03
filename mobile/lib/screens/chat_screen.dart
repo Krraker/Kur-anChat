@@ -71,27 +71,23 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           
           // Scrollable content area (fills entire screen, goes under top and bottom)
-          SafeArea(
-            top: false,
-            child: Column(
-              children: [
-                // Spacer for top blur area
-                const SizedBox(height: 100),
-                
-                // Scrollable content
-                Expanded(
-                  child: Consumer<ChatProvider>(
+          Consumer<ChatProvider>(
                     builder: (context, chatProvider, _) {
                       final messages = chatProvider.messages;
 
                       if (messages.isEmpty) {
-                        return SingleChildScrollView(
-                          padding: const EdgeInsets.only(top: 0, bottom: 160),
-                          child: EmptyState(
-                            onExampleTap: (question) {
-                              chatProvider.sendMessage(question);
-                              _scrollToBottom();
-                            },
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            top: MediaQuery.of(context).padding.top + 70,
+                            bottom: 160,
+                          ),
+                          child: Center(
+                            child: EmptyState(
+                              onExampleTap: (question) {
+                                chatProvider.sendMessage(question);
+                                _scrollToBottom();
+                              },
+                            ),
                           ),
                         );
                       }
@@ -103,12 +99,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
                       return ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 0, // İlk mesaja özel padding ekleyeceğiz
+                          bottom: 160,
+                        ),
                         itemCount: messages.length + (chatProvider.isLoading ? 1 : 0),
                         itemBuilder: (context, index) {
+                          // İlk mesaj için ekstra top padding
+                          Widget messageWidget;
+                          
                           if (index == messages.length) {
-                            // Loading indicator with typing animation
-                            return Padding(
+                            // Loading indicator
+                            messageWidget = Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
                                 children: [
@@ -142,21 +146,29 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ],
                               ),
                             );
+                          } else {
+                            messageWidget = MessageBubble(
+                              message: messages[index],
+                              key: ValueKey(messages[index].id),
+                              isLatest: index == messages.length - 1,
+                            );
                           }
-
-                          return MessageBubble(
-                            message: messages[index],
-                            key: ValueKey(messages[index].id),
-                            isLatest: index == messages.length - 1,
-                          );
+                          
+                          // İlk mesaja (index 0) ekstra top padding ekle
+                          if (index == 0) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                top: MediaQuery.of(context).padding.top + 70,
+                              ),
+                              child: messageWidget,
+                            );
+                          }
+                          
+                          return messageWidget;
                         },
                       );
                     },
                   ),
-                ),
-              ],
-            ),
-          ),
           
           // Top gradient overlay with blur (dark at edge, fades to light)
           Positioned(
@@ -168,7 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
-                    height: 120,
+                    height: MediaQuery.of(context).padding.top + 90,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -199,11 +211,13 @@ class _ChatScreenState extends State<ChatScreen> {
             left: 0,
             right: 0,
             top: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Container(
-                height: 70,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top,
+                left: 16,
+                right: 16,
+              ),
+              height: MediaQuery.of(context).padding.top + 70,
                 child: Row(
                   children: [
                     Expanded(
@@ -253,7 +267,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
-            ),
           ),
           
           // Bottom gradient overlay with blur (light at middle, dark at edge)

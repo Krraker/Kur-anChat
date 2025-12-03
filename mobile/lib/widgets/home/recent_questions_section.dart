@@ -1,8 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../screens/chat_screen.dart';
+import '../../styles/styles.dart';
 
 class RecentQuestionsSection extends StatelessWidget {
   const RecentQuestionsSection({super.key});
@@ -11,7 +11,6 @@ class RecentQuestionsSection extends StatelessWidget {
   static const placeholderQuestions = [
     'Faiz (riba) hakkında ayetler nelerdir?',
     'Sabır hakkında ayetler göster',
-    'Kaygı için dua ver',
   ];
 
   @override
@@ -48,11 +47,9 @@ class RecentQuestionsSection extends StatelessWidget {
             // Use actual messages if available, otherwise use placeholders
             final questions = userMessages.isNotEmpty
                 ? userMessages.reversed.take(3).map((msg) {
-                    // Extract text from message content
                     final content = msg.content;
                     if (content.toString().contains('UserMessageContent')) {
-                      // This is a simplified extraction - adjust based on actual Message model
-                      return 'Recent question'; // TODO: Extract actual text from UserMessageContent
+                      return 'Recent question';
                     }
                     return 'Recent question';
                   }).toList()
@@ -61,38 +58,23 @@ class RecentQuestionsSection extends StatelessWidget {
             if (questions.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
+                child: LiquidGlassListItem(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.history,
+                        color: Colors.white.withOpacity(0.7),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Henüz soru sormadınız',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.history,
-                            color: Colors.white.withOpacity(0.7),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Henüz soru sormadınız',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ),
               );
@@ -106,18 +88,49 @@ class RecentQuestionsSection extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final question = questions[index];
-                return _RecentQuestionCard(
-                  question: question,
+                return LiquidGlassListItem(
                   onTap: () {
-                    // Navigate to chat and optionally pre-fill or continue conversation
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const ChatScreen(),
                       ),
                     );
-                    // TODO: Either reopen that specific conversation or start new with same question
                   },
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.history,
+                        color: GlobalAppStyle.accentColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          question,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right,
+                        color: Colors.white.withOpacity(0.7),
+                        size: 20,
+                      ),
+                    ],
+                  ),
                 );
               },
             );
@@ -127,83 +140,3 @@ class RecentQuestionsSection extends StatelessWidget {
     );
   }
 }
-
-class _RecentQuestionCard extends StatelessWidget {
-  final String question;
-  final VoidCallback onTap;
-
-  const _RecentQuestionCard({
-    required this.question,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.history,
-                    color: const Color(0xFF7FE79C),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      question,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.chevron_right,
-                    color: Colors.white.withOpacity(0.7),
-                    size: 20,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-

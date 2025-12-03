@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'chat_screen.dart';
+import '../styles/styles.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -29,42 +30,15 @@ class _MainNavigationState extends State<MainNavigation> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-        child: SafeArea(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(35),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                height: 70,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(35),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.25),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(0, Icons.home_outlined, Icons.home),
-                    _buildNavItem(1, Icons.chat_bubble_outline, Icons.chat_bubble),
-                    _buildNavItem(2, Icons.menu_book_outlined, Icons.menu_book),
-                    _buildNavItem(3, Icons.person_outline, Icons.person),
-                  ],
-                ),
-              ),
-            ),
-          ),
+      bottomNavigationBar: LiquidGlassNavigationBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(0, Icons.home_outlined, Icons.home),
+            _buildNavItem(1, Icons.chat_bubble_outline, Icons.chat_bubble),
+            _buildNavItem(2, Icons.menu_book_outlined, Icons.menu_book),
+            _buildNavItem(3, Icons.person_outline, Icons.person),
+          ],
         ),
       ),
     );
@@ -88,7 +62,7 @@ class _MainNavigationState extends State<MainNavigation> {
               Icon(
                 isSelected ? activeIcon : icon,
                 color: isSelected 
-                    ? const Color(0xFF7FE79C)
+                    ? GlobalAppStyle.accentColor
                     : Colors.white.withOpacity(0.5),
                 size: 26,
               ),
@@ -259,4 +233,3 @@ class PlaceholderScreen extends StatelessWidget {
     );
   }
 }
-

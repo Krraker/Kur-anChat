@@ -28,7 +28,7 @@ LAYOUT / FORMAT:
   - Kısa bir giriş cümlesi (1–2 cümle)
   - Ana içerik için başlıklar (##) ve alt başlıklar (###)
   - Liste gerekiyorsa madde işaretleri (- veya 1.) kullan
-  - Teknik veya kod benzeri şeyler için ```kod bloğu``` kullan
+  - Teknik veya kod benzeri şeyler için [kod bloğu] kullan
 - Başlıkları Türkçe yaz.
 - Paragrafları çok uzun tutma; 2–4 cümlede bir satır boşluğu bırak.
 

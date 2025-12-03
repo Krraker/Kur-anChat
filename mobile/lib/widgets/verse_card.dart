@@ -52,7 +52,7 @@ class VerseCard extends StatelessWidget {
                   : '${verse.surah}:${verse.ayah}',
               style: const TextStyle(
                 color: Color(0xFF15803D),
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -85,7 +85,7 @@ class VerseCard extends StatelessWidget {
           Text(
             verse.textTr,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 16,
               height: 1.7,
               fontStyle: FontStyle.italic, // İtalik yaptık
               color: Color(0xFF4B5563),
