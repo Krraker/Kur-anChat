@@ -7,8 +7,14 @@ export 'liquid_glass_pill.dart';
 class GlobalAppStyle {
   GlobalAppStyle._();
 
-  /// Primary accent color (green)
-  static const Color accentColor = Color(0xFF7FE79C);
+  /// Primary accent color - Islamic Green (deeper, more traditional)
+  static const Color accentColor = Color(0xFF00A86B); // Jade/Islamic green
+  
+  /// Secondary accent - lighter variant
+  static const Color accentColorLight = Color(0xFF4DC591);
+  
+  /// Gold accent for highlights
+  static const Color goldAccent = Color(0xFFD4AF37);
   
   /// Primary glass tint color
   static const Color glassTint = Colors.white;

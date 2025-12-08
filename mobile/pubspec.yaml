@@ -40,6 +40,7 @@ flutter:
   # Assets
   assets:
     - assets/images/
+    - assets/icons/
     - assets/GettyImages-606920431.jpg
 
 

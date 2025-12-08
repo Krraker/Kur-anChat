@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
-import '../../screens/chat_screen.dart';
+import '../../screens/main_navigation.dart';
 import '../../styles/styles.dart';
 
 class RecentQuestionsSection extends StatelessWidget {
@@ -90,16 +90,13 @@ class RecentQuestionsSection extends StatelessWidget {
                 final question = questions[index];
                 return LiquidGlassListItem(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ChatScreen(),
-                      ),
-                    );
+                    // Switch to chat tab
+                    final navController = NavigationProvider.maybeOf(context);
+                    navController?.goToChat();
                   },
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.history,
                         color: GlobalAppStyle.accentColor,
                         size: 20,

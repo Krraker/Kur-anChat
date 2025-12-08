@@ -38,15 +38,15 @@ class VerseOfDayCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Title
-              Row(
+              const Row(
                 children: [
                   Icon(
                     Icons.star_rounded,
-                    color: const Color(0xFF22c55e),
+                    color: Color(0xFF22c55e),
                     size: 20,
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
+                  SizedBox(width: 8),
+                  Text(
                     'Günün Ayeti',
                     style: TextStyle(
                       fontSize: 16,
@@ -75,9 +75,9 @@ class VerseOfDayCard extends StatelessWidget {
               const SizedBox(height: 12),
               
               // Translation
-              Text(
+              const Text(
                 translation,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.6,
                   fontStyle: FontStyle.italic,
@@ -97,9 +97,9 @@ class VerseOfDayCard extends StatelessWidget {
                       color: const Color(0xFFDCFCE7),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
+                    child: const Text(
                       reference,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF15803D),

@@ -75,7 +75,7 @@ class _ChatInputState extends State<ChatInput> {
                     maxLines: null,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
-                      hintText: 'Kuran hakkında bir soru sorun...',
+                      hintText: 'Kur\'an hakkında bir soru sorun...',
                       hintStyle: TextStyle(
                         color: Color(0xFF9CA3AF),
                         fontSize: 15,

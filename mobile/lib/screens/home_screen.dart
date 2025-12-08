@@ -1,69 +1,108 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../widgets/home/quick_actions_section.dart';
-import '../widgets/home/topics_carousel.dart';
-import '../widgets/home/recent_questions_section.dart';
+import '../styles/styles.dart';
+import '../widgets/app_gradient_background.dart';
+import '../widgets/home/weekly_progress_section.dart';
+import '../widgets/home/daily_journey_card.dart';
+import '../widgets/home/islamic_calendar_banner.dart';
+import 'main_navigation.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Demo data - in real app this would come from state management
+    const completedActivities = 2; // Out of 4
+    const totalActivities = 4;
+    const progress = completedActivities / totalActivities;
+    
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background image
-          Positioned.fill(
-            child: Image.asset(
-              'assets/GettyImages-606920431.jpg',
-              fit: BoxFit.cover,
-            ),
-          ),
-          
-          // Dark overlay to ensure text readability
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.5),
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.6),
-                  ],
-                  stops: const [0.0, 0.4, 0.6, 1.0],
-                ),
-              ),
-            ),
-          ),
-          
-          // Scrollable content area
+      body: AppGradientBackground(
+        child: Stack(
+          children: [
+            // Scrollable content area
           SingleChildScrollView(
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 70,
+              top: MediaQuery.of(context).padding.top + 72,
               bottom: 160,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                SizedBox(height: 20),
+              children: [
+                const SizedBox(height: 20),
                 
-                // Quick Actions (2 cards: Dualar, Sure/Cüz)
-                QuickActionsSection(),
+                // Weekly Progress Calendar
+                const WeeklyProgressSection(
+                  currentDayIndex: 6, // Sunday (demo)
+                  completedDays: [true, true, false, false, false, false, false],
+                  streakCount: 2,
+                ),
                 
-                SizedBox(height: 180),
+                const SizedBox(height: 24),
                 
-                // Topics carousel
-                TopicsCarousel(),
+                // Daily Progress Bar
+                DailyProgressBar(
+                  progress: progress,
+                  label: 'Bugünkü ilerleme',
+                ),
                 
-                SizedBox(height: 20),
+                const SizedBox(height: 24),
                 
-                // Recent questions
-                RecentQuestionsSection(),
+                // Activity Cards
+                DailyJourneyCard(
+                  title: 'Günün Ayeti',
+                  duration: '1 DK',
+                  icon: Icons.auto_stories,
+                  isCompleted: true,
+                  onTap: () => _navigateToChat(context),
+                ),
                 
-                SizedBox(height: 24),
+                const SizedBox(height: 12),
+                
+                DailyJourneyCard(
+                  title: 'Kişisel Tefsir',
+                  duration: '2 DK',
+                  icon: Icons.psychology,
+                  isCompleted: true,
+                  onTap: () => _navigateToChat(context),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                DailyJourneyCard(
+                  title: 'Günün Duası',
+                  duration: '1 DK',
+                  icon: Icons.favorite_border,
+                  isCompleted: false,
+                  isExpandable: true,
+                  onTap: () => _navigateToChat(context),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                const DailyRewardCard(
+                  isLocked: true,
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Divider with crescent moon
+                const IconDivider(
+                  icon: Icons.nightlight_round,
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Islamic Calendar Banner
+                const IslamicCalendarBanner(
+                  hijriDay: 5,
+                  hijriMonth: 'Cemaziyelahir',
+                  hijriYear: 1446,
+                  // specialEvent: 'Cuma', // Uncomment for special events
+                ),
+                
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -78,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
-                    height: MediaQuery.of(context).padding.top + 90,
+                    height: MediaQuery.of(context).padding.top + 80,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -93,7 +132,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       border: Border(
                         bottom: BorderSide(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withOpacity(0.1),
                           width: 0.5,
                         ),
                       ),
@@ -104,50 +143,137 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           
-          // Top content (AppBar) on top of blur
+          // Top content (Header) on top of blur
           Positioned(
             left: 0,
             right: 0,
             top: 0,
             child: Container(
               padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top,
+                top: MediaQuery.of(context).padding.top + 8,
                 left: 16,
                 right: 16,
               ),
-              height: MediaQuery.of(context).padding.top + 70,
               child: Row(
                 children: [
+                  // Profile Avatar
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          GlobalAppStyle.accentColor,
+                          GlobalAppStyle.accentColor.withOpacity(0.7),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: GlobalAppStyle.accentColor.withOpacity(0.3),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'K',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 14),
+                  
+                  // Title and Subtitle
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          'Ayet Rehberi',
+                          'Günün Yolculuğu',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             shadows: [
                               Shadow(
-                                color: Colors.black38,
+                                color: Colors.black.withOpacity(0.4),
                                 blurRadius: 8,
-                                offset: Offset(0, 2),
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
                         ),
+                        Row(
+                          children: [
+                            Text(
+                              'Manevi Gelişim',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.7),
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: Colors.white.withOpacity(0.5),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Streak Counter
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.15),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department,
+                          size: 16,
+                          color: Color(0xFFFFB74D),
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          'Kuran ayetlerine dayalı rehber',
+                          '2',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFE8F5E9),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                             shadows: [
                               Shadow(
-                                color: Colors.black26,
-                                blurRadius: 6,
-                                offset: Offset(0, 1),
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
                               ),
                             ],
                           ),
@@ -155,18 +281,44 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                  
+                  const SizedBox(width: 8),
+                  
+                  // Divider
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: Colors.white.withOpacity(0.2),
+                  ),
+                  
+                  const SizedBox(width: 8),
+                  
+                  // Calendar Icon
                   IconButton(
-                    icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                    icon: Icon(
+                      Icons.calendar_today_outlined,
+                      color: Colors.white.withOpacity(0.8),
+                      size: 22,
+                    ),
                     onPressed: () {
-                      // TODO: Navigate to settings screen when implemented
+                      // TODO: Show calendar view
                     },
                   ),
                 ],
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  void _navigateToChat(BuildContext context) {
+    // Use NavigationController to switch to Chat tab instead of pushing new route
+    final navController = NavigationProvider.maybeOf(context);
+    if (navController != null) {
+      navController.goToChat();
+    }
   }
 }

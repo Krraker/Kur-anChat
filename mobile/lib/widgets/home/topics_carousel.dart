@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../screens/chat_screen.dart';
+import '../../screens/main_navigation.dart';
 import '../../styles/styles.dart';
 
 class TopicsCarousel extends StatelessWidget {
@@ -50,13 +50,9 @@ class TopicsCarousel extends StatelessWidget {
               final topic = topics[index];
               return LiquidGlassChip(
                 onTap: () {
-                  // Navigate to chat with pre-filled prompt about this topic
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ChatScreen(),
-                    ),
-                  );
+                  // Switch to chat tab
+                  final navController = NavigationProvider.maybeOf(context);
+                  navController?.goToChat();
                 },
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

@@ -22,11 +22,6 @@ class _MessageBubbleState extends State<MessageBubble>
   String _displayedText = '';
   int _currentVerseIndex = 0;
   bool _textComplete = false;
-  
-  // Satır satır animasyon için
-  List<String> _sentences = [];
-  int _currentSentenceIndex = 0;
-  bool _useSentenceAnimation = false;
 
   @override
   void initState() {
@@ -34,19 +29,12 @@ class _MessageBubbleState extends State<MessageBubble>
     if (widget.message.sender == MessageSender.assistant && widget.isLatest) {
       _animateText();
     } else {
-      // Eski mesajlar için animasyon yok
+      // Old messages - no animation
       _textComplete = true;
       if (widget.message.sender == MessageSender.assistant) {
         final content = widget.message.content as AssistantMessageContent;
         _displayedText = content.summary;
         _currentVerseIndex = content.verses.length;
-        
-        // Eski mesajlar için de cümlelere böl
-        final sentencePattern = RegExp(r'[.!?]+\s*');
-        final sentences = content.summary.split(sentencePattern).where((s) => s.trim().isNotEmpty).toList();
-        _sentences = sentences;
-        _currentSentenceIndex = sentences.length;
-        _useSentenceAnimation = sentences.length > 3 || content.summary.length > 200;
       }
     }
   }
@@ -57,48 +45,20 @@ class _MessageBubbleState extends State<MessageBubble>
     final content = widget.message.content as AssistantMessageContent;
     final fullText = content.summary;
 
-    // Metni cümlelere böl (nokta, soru işareti, ünlem işaretinden sonra)
-    final sentencePattern = RegExp(r'[.!?]+\s*');
-    final sentences = fullText.split(sentencePattern).where((s) => s.trim().isNotEmpty).toList();
-    
-    // Uzun mu kontrol et (3'ten fazla cümle VEYA 200 karakterden uzun)
-    final isLongText = sentences.length > 3 || fullText.length > 200;
-
-    if (isLongText) {
-      // UZUN METİN: Cümle cümle smooth fade-in
+    // Always use letter-by-letter typing animation
+    for (int i = 0; i <= fullText.length; i++) {
+      if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 20));
       setState(() {
-        _useSentenceAnimation = true;
-        _sentences = sentences;
+        _displayedText = fullText.substring(0, i);
       });
-
-      // Cümleleri sırayla göster - baloncuk büyüsün
-      for (int i = 0; i < sentences.length; i++) {
-        if (!mounted) return;
-        await Future.delayed(const Duration(milliseconds: 400));
-        setState(() {
-          _currentSentenceIndex = i + 1;
-        });
-      }
-    } else {
-      // KISA METİN: Karakter karakter typing animasyonu
-      setState(() {
-        _useSentenceAnimation = false;
-      });
-      
-      for (int i = 0; i <= fullText.length; i++) {
-        if (!mounted) return;
-        await Future.delayed(const Duration(milliseconds: 25));
-        setState(() {
-          _displayedText = fullText.substring(0, i);
-        });
-      }
     }
 
     setState(() {
       _textComplete = true;
     });
 
-    // Ayetleri sırayla göster
+    // Show verses one by one
     for (int i = 0; i < content.verses.length; i++) {
       if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 400));
@@ -113,7 +73,7 @@ class _MessageBubbleState extends State<MessageBubble>
     final isUser = widget.message.sender == MessageSender.user;
 
     if (isUser) {
-      // Kullanıcı mesajı - SAĞDA (Glassmorphism)
+      // User message - RIGHT (Soft blue-gray for contrast)
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -132,7 +92,8 @@ class _MessageBubbleState extends State<MessageBubble>
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4E0).withOpacity(0.75), // Semi-transparent
+                      // Soft blue-gray for user messages
+                      color: const Color(0xFFE8EEF4).withOpacity(0.9),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -140,14 +101,14 @@ class _MessageBubbleState extends State<MessageBubble>
                         bottomRight: Radius.circular(4),
                       ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: const Color(0xFFCDD8E4).withOpacity(0.6),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
@@ -161,7 +122,7 @@ class _MessageBubbleState extends State<MessageBubble>
         ),
       );
     } else {
-      // Asistan mesajı - SOLDA (Glassmorphism)
+      // Assistant message - LEFT (Clean white/light gray)
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -179,7 +140,8 @@ class _MessageBubbleState extends State<MessageBubble>
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFFBF0).withOpacity(0.85), // Semi-transparent
+                      // Clean white for assistant messages
+                      color: const Color(0xFFFCFCFC).withOpacity(0.95),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -187,13 +149,13 @@ class _MessageBubbleState extends State<MessageBubble>
                         bottomRight: Radius.circular(20),
                       ),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.4),
+                        color: const Color(0xFFE5E5E5).withOpacity(0.7),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 12,
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -216,8 +178,8 @@ class _MessageBubbleState extends State<MessageBubble>
     return Text(
       content.text,
       style: const TextStyle(
-        color: Color(0xFF4A3E2A), // Koyu kahverengi text
-        fontSize: 18,
+        color: Color(0xFF2D3748), // Dark gray-blue for user text
+        fontSize: 15,
         height: 1.5,
       ),
     );
@@ -229,30 +191,25 @@ class _MessageBubbleState extends State<MessageBubble>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Summary (Animasyonlu)
-        if (_useSentenceAnimation)
-          // UZUN METİN: Cümle cümle fade-in
-          _buildSentenceBySeentenceText()
-        else
-          // KISA METİN: Karakter karakter typing
-          Text(
-            _displayedText,
-            style: const TextStyle(
-              color: Color(0xFF3E3228),
-              fontSize: 18,
-              height: 1.6,
-              letterSpacing: 0.2,
-            ),
+        // Summary with letter-by-letter typing
+        Text(
+          _displayedText,
+          style: const TextStyle(
+            color: Color(0xFF3E3228),
+            fontSize: 15,
+            height: 1.5,
+            letterSpacing: 0.1,
+          ),
+        ),
+
+        // Typing cursor (blinking)
+        if (!_textComplete && _displayedText.isNotEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: _TypingCursor(),
           ),
 
-        // Typing cursor (yanıp sönen) - sadece karakter animasyonu için
-        if (!_useSentenceAnimation && !_textComplete && _displayedText.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: _TypingIndicator(),
-          ),
-
-        // Verses (Animasyonlu)
+        // Verses (Animated)
         if (_currentVerseIndex > 0) ...[
           const SizedBox(height: 16),
           ...List.generate(
@@ -264,7 +221,7 @@ class _MessageBubbleState extends State<MessageBubble>
           ),
         ],
 
-        // Disclaimer (Sadece tamamlandığında)
+        // Disclaimer (Only when complete)
         if (_textComplete && content.disclaimer.isNotEmpty) ...[
           const SizedBox(height: 12),
           AnimatedOpacity(
@@ -285,9 +242,9 @@ class _MessageBubbleState extends State<MessageBubble>
                 content.disclaimer,
                 style: const TextStyle(
                   color: Color(0xFF6B5D4F),
-                  fontSize: 14,
+                  fontSize: 12,
                   fontStyle: FontStyle.italic,
-                  height: 1.5,
+                  height: 1.4,
                   letterSpacing: 0.1,
                 ),
               ),
@@ -297,113 +254,17 @@ class _MessageBubbleState extends State<MessageBubble>
       ],
     );
   }
-
-  // Cümle cümle smooth fade-in animasyonu - baloncuk büyüsün
-  Widget _buildSentenceBySeentenceText() {
-    // Sadece görünür cümleleri göster (baloncuk büyüsün)
-    if (_currentSentenceIndex == 0) {
-      return const SizedBox.shrink();
-    }
-    
-    return Wrap(
-      children: List.generate(_currentSentenceIndex, (index) {
-        final sentence = _sentences[index];
-        final isLatestSentence = index == _currentSentenceIndex - 1;
-        final shouldAnimate = isLatestSentence && !_textComplete;
-        
-        return _FadeInSentence(
-          key: ValueKey('sentence_$index'),
-          sentence: sentence + (index < _sentences.length - 1 ? '. ' : ''),
-          isLatest: isLatestSentence,
-          isComplete: _textComplete,
-          shouldAnimate: shouldAnimate, // Sadece son cümle animate olsun
-        );
-      }),
-    );
-  }
 }
 
-// Fade-in sentence widget - Smooth opacity animation
-class _FadeInSentence extends StatefulWidget {
-  final String sentence;
-  final bool isLatest;
-  final bool isComplete;
-  final bool shouldAnimate;
-
-  const _FadeInSentence({
-    super.key,
-    required this.sentence,
-    required this.isLatest,
-    required this.isComplete,
-    required this.shouldAnimate,
-  });
+// Typing cursor - blinking animation
+class _TypingCursor extends StatefulWidget {
+  const _TypingCursor();
 
   @override
-  State<_FadeInSentence> createState() => _FadeInSentenceState();
+  State<_TypingCursor> createState() => _TypingCursorState();
 }
 
-class _FadeInSentenceState extends State<_FadeInSentence>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    // Sadece animate edilmesi gereken cümle için animasyonu başlat
-    if (widget.shouldAnimate) {
-      _controller.forward();
-    } else {
-      // Eski cümleler direkt görünsün
-      _controller.value = 1.0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacityAnimation,
-      child: Text(
-        widget.sentence,
-        style: TextStyle(
-          color: const Color(0xFF3E3228),
-          fontSize: 18,
-          height: 1.6,
-          letterSpacing: 0.2,
-          fontWeight: widget.isLatest && !widget.isComplete ? FontWeight.w500 : FontWeight.w400,
-        ),
-      ),
-    );
-  }
-}
-
-// Typing indicator widget - Animated
-class _TypingIndicator extends StatefulWidget {
-  const _TypingIndicator({Key? key}) : super(key: key);
-
-  @override
-  State<_TypingIndicator> createState() => _TypingIndicatorState();
-}
-
-class _TypingIndicatorState extends State<_TypingIndicator>
+class _TypingCursorState extends State<_TypingCursor>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -426,26 +287,114 @@ class _TypingIndicatorState extends State<_TypingIndicator>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _controller,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: const Color(0xFF22c55e),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF22c55e).withOpacity(0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          ),
-        ],
+      child: Container(
+        width: 2,
+        height: 16,
+        decoration: BoxDecoration(
+          color: const Color(0xFF3E3228),
+          borderRadius: BorderRadius.circular(1),
+        ),
       ),
+    );
+  }
+}
+
+/// Jumping dots loading indicator - ChatGPT style
+class JumpingDotsIndicator extends StatefulWidget {
+  final Color dotColor;
+  final double dotSize;
+  
+  const JumpingDotsIndicator({
+    super.key,
+    this.dotColor = const Color(0xFF6B5D4F),
+    this.dotSize = 8,
+  });
+
+  @override
+  State<JumpingDotsIndicator> createState() => _JumpingDotsIndicatorState();
+}
+
+class _JumpingDotsIndicatorState extends State<JumpingDotsIndicator>
+    with TickerProviderStateMixin {
+  late List<AnimationController> _controllers;
+  late List<Animation<double>> _animations;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(3, (index) {
+      return AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: this,
+      );
+    });
+
+    _animations = _controllers.map((controller) {
+      return Tween<double>(begin: 0, end: -8).animate(
+        CurvedAnimation(
+          parent: controller,
+          curve: Curves.easeInOut,
+        ),
+      );
+    }).toList();
+
+    // Start the staggered animation
+    _startAnimation();
+  }
+
+  void _startAnimation() async {
+    while (mounted) {
+      for (int i = 0; i < _controllers.length; i++) {
+        if (!mounted) return;
+        _controllers[i].forward();
+        await Future.delayed(const Duration(milliseconds: 150));
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      for (int i = 0; i < _controllers.length; i++) {
+        if (!mounted) return;
+        _controllers[i].reverse();
+        await Future.delayed(const Duration(milliseconds: 150));
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (index) {
+        return AnimatedBuilder(
+          animation: _animations[index],
+          builder: (context, child) {
+            return Container(
+              margin: EdgeInsets.only(left: index > 0 ? 6 : 0),
+              child: Transform.translate(
+                offset: Offset(0, _animations[index].value),
+                child: Container(
+                  width: widget.dotSize,
+                  height: widget.dotSize,
+                  decoration: BoxDecoration(
+                    color: widget.dotColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 }
@@ -479,7 +428,6 @@ class _AnimatedVerseCardState extends State<AnimatedVerseCard>
       vsync: this,
     );
 
-    // Smooth fade in with opacity
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -487,7 +435,6 @@ class _AnimatedVerseCardState extends State<AnimatedVerseCard>
       ),
     );
 
-    // Gentle slide up
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.15),
       end: Offset.zero,
@@ -523,5 +470,3 @@ class _AnimatedVerseCardState extends State<AnimatedVerseCard>
     );
   }
 }
-
-
