@@ -208,13 +208,13 @@ class _QuranScreenState extends State<QuranScreen> {
             ],
           ),
           
-          // Bottom navigation controls
+          // Bottom navigation controls - floating glassmorphism buttons
           Positioned(
             left: 0,
             right: 0,
-            bottom: 100,
+            bottom: 140,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 50),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -364,29 +364,28 @@ class _QuranScreenState extends State<QuranScreen> {
   Widget _buildNavButton(IconData icon, {bool isCenter = false, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: isCenter ? 56 : 48,
-        height: isCenter ? 56 : 48,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.15),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.25),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 12,
-              spreadRadius: -2,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(isCenter ? 28 : 24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            width: isCenter ? 56 : 48,
+            height: isCenter ? 56 : 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.1),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
             ),
-          ],
-        ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white.withOpacity(0.9),
-            size: isCenter ? 28 : 24,
+            child: Center(
+              child: Icon(
+                icon,
+                color: Colors.white.withOpacity(0.9),
+                size: isCenter ? 28 : 22,
+              ),
+            ),
           ),
         ),
       ),

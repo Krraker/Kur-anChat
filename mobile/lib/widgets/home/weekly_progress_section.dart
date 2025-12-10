@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../styles/styles.dart';
 
 /// Weekly progress calendar showing days of the week with completion status
-class WeeklyProgressSection extends StatelessWidget {
+/// Now swipeable to navigate between weeks
+class WeeklyProgressSection extends StatefulWidget {
   final int currentDayIndex; // 0 = Monday (Pazartesi)
   final List<bool> completedDays; // Which days are completed
   final int streakCount;
@@ -15,20 +16,105 @@ class WeeklyProgressSection extends StatelessWidget {
     this.streakCount = 0,
   });
 
+  @override
+  State<WeeklyProgressSection> createState() => _WeeklyProgressSectionState();
+}
+
+class _WeeklyProgressSectionState extends State<WeeklyProgressSection> {
+  late PageController _pageController;
+  int _currentWeekOffset = 0; // 0 = this week, -1 = last week, 1 = next week
+
   // Turkish day abbreviations
   static const List<String> dayLabels = ['P', 'S', 'Ç', 'P', 'C', 'C', 'P'];
-  static const List<String> fullDayNames = [
-    'Pazartesi',
-    'Salı', 
-    'Çarşamba',
-    'Perşembe',
-    'Cuma',
-    'Cumartesi',
-    'Pazar'
-  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 50); // Start in middle for infinite scroll feel
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Get the Monday of a specific week offset
+  DateTime _getWeekStart(int weekOffset) {
+    final now = DateTime.now();
+    final currentWeekday = now.weekday; // 1 = Monday, 7 = Sunday
+    final monday = now.subtract(Duration(days: currentWeekday - 1));
+    return monday.add(Duration(days: weekOffset * 7));
+  }
+
+  // Check if a day is today
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
+  // Check if a day is in the past
+  bool _isPast(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return date.isBefore(today);
+  }
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Swipeable week view
+        SizedBox(
+          height: 90,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (page) {
+              setState(() {
+                _currentWeekOffset = page - 50;
+              });
+            },
+            itemBuilder: (context, pageIndex) {
+              final weekOffset = pageIndex - 50;
+              return _buildWeekView(weekOffset);
+            },
+          ),
+        ),
+        
+        // Week indicator dots
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildWeekIndicator(-1),
+            const SizedBox(width: 6),
+            _buildWeekIndicator(0),
+            const SizedBox(width: 6),
+            _buildWeekIndicator(1),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeekIndicator(int offset) {
+    final isActive = _currentWeekOffset == offset;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: isActive ? 20 : 6,
+      height: 6,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(3),
+        color: isActive 
+            ? GlobalAppStyle.accentColor
+            : Colors.white.withOpacity(0.3),
+      ),
+    );
+  }
+
+  Widget _buildWeekView(int weekOffset) {
+    final weekStart = _getWeekStart(weekOffset);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -37,6 +123,9 @@ class WeeklyProgressSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
+              final date = weekStart.add(Duration(days: index));
+              final isToday = _isToday(date);
+              
               return SizedBox(
                 width: 44,
                 child: Center(
@@ -45,7 +134,7 @@ class WeeklyProgressSection extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: index == currentDayIndex
+                      color: isToday
                           ? Colors.white
                           : Colors.white.withOpacity(0.5),
                       shadows: [
@@ -67,16 +156,20 @@ class WeeklyProgressSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
-              final isCompleted = index < completedDays.length && completedDays[index];
-              final isCurrent = index == currentDayIndex;
-              final dayNumber = index + 1;
+              final date = weekStart.add(Duration(days: index));
+              final isToday = _isToday(date);
+              final isPast = _isPast(date);
+              
+              // For demo: completed days are past days in the current week
+              final isCompleted = weekOffset == 0 
+                  ? (index < widget.completedDays.length && widget.completedDays[index])
+                  : (weekOffset < 0 ? true : false); // Past weeks all complete, future all incomplete
               
               return _DayCircle(
-                dayNumber: dayNumber,
-                isCompleted: isCompleted,
-                isCurrent: isCurrent,
-                hasStreak: isCompleted && index > 0 && 
-                    (index - 1 < completedDays.length && completedDays[index - 1]),
+                dayNumber: date.day,
+                isCompleted: isCompleted && isPast,
+                isCurrent: isToday,
+                isPast: isPast,
               );
             }),
           ),
@@ -90,13 +183,13 @@ class _DayCircle extends StatelessWidget {
   final int dayNumber;
   final bool isCompleted;
   final bool isCurrent;
-  final bool hasStreak;
+  final bool isPast;
 
   const _DayCircle({
     required this.dayNumber,
     required this.isCompleted,
     required this.isCurrent,
-    required this.hasStreak,
+    required this.isPast,
   });
 
   @override
@@ -145,7 +238,9 @@ class _DayCircle extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: isCurrent 
                       ? accentColor
-                      : Colors.white.withOpacity(0.7),
+                      : isPast
+                          ? Colors.white.withOpacity(0.5)
+                          : Colors.white.withOpacity(0.7),
                   shadows: [
                     Shadow(
                       color: Colors.black.withOpacity(0.3),
@@ -256,4 +351,3 @@ class DailyProgressBar extends StatelessWidget {
     );
   }
 }
-

@@ -315,7 +315,7 @@ class HomeScreen extends StatelessWidget {
                       size: 22,
                     ),
                     onPressed: () {
-                      // TODO: Show calendar view
+                      CalendarPopup.show(context);
                     },
                   ),
                 ],

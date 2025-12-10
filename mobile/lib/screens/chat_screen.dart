@@ -252,29 +252,28 @@ class _ChatScreenState extends State<ChatScreen> {
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            // Background gradient (simulating book image)
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.brown.shade400.withOpacity(0.8),
-                    Colors.brown.shade600.withOpacity(0.9),
-                    Colors.brown.shade800.withOpacity(0.95),
-                  ],
-                ),
+            // Background image - Beautiful Quran book
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/daily_surah_bg.png',
+                fit: BoxFit.cover,
               ),
             ),
             
-            // Decorative book overlay
-            Positioned(
-              right: -20,
-              bottom: -20,
-              child: Icon(
-                Icons.menu_book,
-                size: 150,
-                color: Colors.white.withOpacity(0.1),
+            // Subtle dark overlay for text readability
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.3),
+                      Colors.black.withOpacity(0.1),
+                      Colors.black.withOpacity(0.4),
+                    ],
+                  ),
+                ),
               ),
             ),
             
@@ -292,8 +291,16 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Colors.white,
                       shadows: [
                         Shadow(
+                          color: Colors.black.withOpacity(0.8),
+                          blurRadius: 12,
+                        ),
+                        Shadow(
+                          color: Colors.black.withOpacity(0.6),
+                          blurRadius: 6,
+                        ),
+                        Shadow(
                           color: Colors.black.withOpacity(0.4),
-                          blurRadius: 8,
+                          blurRadius: 2,
                         ),
                       ],
                     ),
@@ -308,14 +315,22 @@ class _ChatScreenState extends State<ChatScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.white.withOpacity(0.95),
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                           height: 1.5,
                           fontStyle: FontStyle.italic,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 4,
+                              color: Colors.black.withOpacity(0.9),
+                              blurRadius: 16,
+                            ),
+                            Shadow(
+                              color: Colors.black.withOpacity(0.7),
+                              blurRadius: 8,
+                            ),
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 3,
                             ),
                           ],
                         ),
@@ -331,8 +346,16 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: GlobalAppStyle.accentColor,
                       shadows: [
                         Shadow(
+                          color: Colors.black.withOpacity(0.9),
+                          blurRadius: 12,
+                        ),
+                        Shadow(
+                          color: Colors.black.withOpacity(0.6),
+                          blurRadius: 6,
+                        ),
+                        Shadow(
                           color: Colors.black.withOpacity(0.3),
-                          blurRadius: 4,
+                          blurRadius: 2,
                         ),
                       ],
                     ),

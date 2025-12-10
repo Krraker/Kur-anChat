@@ -67,11 +67,13 @@ class ExpandableDailyJourneyCard extends StatefulWidget {
 enum CardType { verse, tefsir, prayer, generic }
 
 class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard> 
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
+  late AnimationController _glowController;
   late Animation<double> _heightAnimation;
   late Animation<double> _arrowAnimation;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _glowAnimation;
   bool _isExpanded = false;
   
   // Cached content to prevent rebuilding during animation
@@ -89,6 +91,19 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
     _controller = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
+    );
+    
+    // Slow pulsing glow animation for holy light effect
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 3500),
+      vsync: this,
+    );
+    
+    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _glowController,
+        curve: Curves.easeInOut,
+      ),
     );
     
     _heightAnimation = CurvedAnimation(
@@ -113,6 +128,7 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
   @override
   void dispose() {
     _controller.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -123,8 +139,14 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
         _controller.forward();
+        // Start the glow animation loop for cards with background images
+        if (widget.cardType == CardType.verse || widget.cardType == CardType.tefsir) {
+          _glowController.repeat(reverse: true);
+        }
       } else {
         _controller.reverse();
+        _glowController.stop();
+        _glowController.reset();
       }
     });
     
@@ -149,138 +171,91 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Divider
             Container(
               height: 1,
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     Colors.white.withOpacity(0.0),
-                    Colors.white.withOpacity(0.2),
+                    Colors.white.withOpacity(0.3),
                     Colors.white.withOpacity(0.0),
                   ],
                 ),
               ),
             ),
-            // Quran paper styled container
+            // Surah badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: GlobalAppStyle.accentColor.withOpacity(0.5),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '${verse['surahTr']} • Ayet ${verse['ayah']}',
+                style: TextStyle(
+                  color: GlobalAppStyle.accentColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Arabic text - Right aligned
             Container(
               width: double.infinity,
-              decoration: BoxDecoration(
-                // Traditional Quran paper - aged parchment color
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFF8F0E3), // Light aged parchment
-                    Color(0xFFF5ECD8), // Slightly darker cream
-                    Color(0xFFF2E8D0), // Warm aged paper
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                verse['arabic'] as String,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                style: GoogleFonts.scheherazadeNew(
+                  fontSize: 24,
+                  height: 2.0,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.8),
+                      blurRadius: 12,
+                    ),
+                    Shadow(
+                      color: Colors.black.withOpacity(0.6),
+                      blurRadius: 6,
+                    ),
                   ],
-                  stops: [0.0, 0.5, 1.0],
                 ),
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                  topLeft: Radius.circular(4),
-                  bottomLeft: Radius.circular(4),
-                ),
-                border: const Border(
-                  left: BorderSide(
-                    color: GlobalAppStyle.accentColor,
-                    width: 4,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF8B7355).withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                    spreadRadius: -1,
-                  ),
-                ],
               ),
-              child: Stack(
-                children: [
-                  // Decorative corner
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: 14,
-                      color: GlobalAppStyle.accentColor.withOpacity(0.15),
-                    ),
+            ),
+            const SizedBox(height: 12),
+            // Turkish meaning
+            Text(
+              verse['meaning'] as String,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                fontStyle: FontStyle.italic,
+                color: Colors.white.withOpacity(0.95),
+                letterSpacing: 0.2,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.8),
+                    blurRadius: 10,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Surah badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: GlobalAppStyle.accentColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            '${verse['surahTr']} • Ayet ${verse['ayah']}',
-                            style: TextStyle(
-                              color: GlobalAppStyle.accentColor.withOpacity(0.9),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Arabic text - Right aligned
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: const Color(0xFFD4C4A8).withOpacity(0.5),
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            verse['arabic'] as String,
-                            textAlign: TextAlign.right,
-                            textDirection: TextDirection.rtl,
-                            style: GoogleFonts.scheherazadeNew(
-                              fontSize: 24,
-                              height: 2.0,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF1A1408),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Turkish meaning
-                        Text(
-                          verse['meaning'] as String,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            height: 1.6,
-                            fontStyle: FontStyle.italic,
-                            color: Color(0xFF4A4035),
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
-                    ),
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 4,
                   ),
                 ],
               ),
@@ -296,151 +271,112 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Divider
             Container(
               height: 1,
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     Colors.white.withOpacity(0.0),
-                    Colors.white.withOpacity(0.2),
+                    Colors.white.withOpacity(0.3),
                     Colors.white.withOpacity(0.0),
                   ],
                 ),
               ),
             ),
-            // Quran paper styled container
+            // Tefsir header badge
             Container(
-              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFF8F0E3),
-                    Color(0xFFF5ECD8),
-                    Color(0xFFF2E8D0),
-                  ],
-                  stops: [0.0, 0.5, 1.0],
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: GlobalAppStyle.accentColor.withOpacity(0.5),
+                  width: 1,
                 ),
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                  topLeft: Radius.circular(4),
-                  bottomLeft: Radius.circular(4),
-                ),
-                border: const Border(
-                  left: BorderSide(
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.auto_stories_rounded,
+                    size: 12,
                     color: GlobalAppStyle.accentColor,
-                    width: 4,
                   ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF8B7355).withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                    spreadRadius: -1,
+                  const SizedBox(width: 5),
+                  Text(
+                    'Tefsir • ${verse['surahTr']}',
+                    style: TextStyle(
+                      color: GlobalAppStyle.accentColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ],
               ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Icon(
-                      Icons.auto_stories_rounded,
-                      size: 14,
-                      color: GlobalAppStyle.accentColor.withOpacity(0.15),
-                    ),
+            ),
+            const SizedBox(height: 16),
+            // Tafsir text
+            Text(
+              verse['tafsir'] as String,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: Colors.white.withOpacity(0.95),
+                height: 1.6,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.8),
+                    blurRadius: 10,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Tefsir header badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: GlobalAppStyle.accentColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                              width: 1,
-                            ),
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Wisdom with light bulb
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Colors.amber.withOpacity(0.4),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_rounded,
+                    size: 18,
+                    color: Colors.amber.shade400,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Her zorlukla beraber bir kolaylık vardır.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.amber.shade200,
+                        fontStyle: FontStyle.italic,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.6),
+                            blurRadius: 6,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.auto_stories_rounded,
-                                size: 12,
-                                color: GlobalAppStyle.accentColor.withOpacity(0.8),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Tefsir • ${verse['surahTr']}',
-                                style: TextStyle(
-                                  color: GlobalAppStyle.accentColor.withOpacity(0.9),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Tafsir text
-                        Text(
-                          verse['tafsir'] as String,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF4A4035),
-                            height: 1.6,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Wisdom with light bulb
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.amber.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.lightbulb_rounded,
-                                size: 16,
-                                color: Colors.amber.shade700,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Her zorlukla beraber bir kolaylık vardır.',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.amber.shade900,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -612,49 +548,101 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
   Widget build(BuildContext context) {
     final effectiveAccentColor = widget.accentColor ?? GlobalAppStyle.accentColor;
     
+    // Determine if this card should have the holy glow
+    final bool hasHolyGlow = widget.cardType == CardType.verse || widget.cardType == CardType.tefsir;
+    
     return GestureDetector(
       onTap: _toggleExpand,
       child: AnimatedBuilder(
-        animation: _controller,
+        animation: Listenable.merge([_controller, _glowController]),
         builder: (context, child) {
+          // Calculate glow intensity based on expansion and glow animation
+          final glowIntensity = _isExpanded && hasHolyGlow 
+              ? _glowAnimation.value 
+              : 0.0;
+          
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
+                // Base shadow
                 BoxShadow(
                   color: Colors.black.withOpacity(0.25),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                   spreadRadius: -4,
                 ),
+                // Holy glow effect - tight concentrated glow when expanded
+                if (_isExpanded && hasHolyGlow)
+                  BoxShadow(
+                    color: GlobalAppStyle.accentColor.withOpacity(0.18 + (glowIntensity * 0.15)),
+                    blurRadius: 8 + (glowIntensity * 4),
+                    spreadRadius: 0 + (glowIntensity * 1),
+                  ),
+                // Secondary warm glow - tight and subtle
+                if (_isExpanded && hasHolyGlow)
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withOpacity(0.08 + (glowIntensity * 0.08)),
+                    blurRadius: 12 + (glowIntensity * 6),
+                    spreadRadius: -2,
+                  ),
               ],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white.withOpacity(0.08),
-                    border: Border.all(
-                      color: widget.isCompleted 
-                          ? effectiveAccentColor.withOpacity(0.4)
-                          : Colors.white.withOpacity(0.2),
-                      width: 1.5,
+              child: Stack(
+                children: [
+                  // Background image for verse card
+                  if (widget.cardType == CardType.verse)
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/daily_surah_bg_homepage.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withOpacity(0.18),
-                        Colors.white.withOpacity(0.06),
-                        Colors.white.withOpacity(0.02),
-                      ],
-                      stops: const [0.0, 0.3, 1.0],
+                  // Background image for tefsir card
+                  if (widget.cardType == CardType.tefsir)
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/daily_tefsir_bg_homepage.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
+                  // Blur filter for cards without background images
+                  if (widget.cardType != CardType.verse && widget.cardType != CardType.tefsir)
+                    Positioned.fill(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                        child: Container(color: Colors.transparent),
+                      ),
+                    ),
+                  // Main container
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: (widget.cardType == CardType.verse || widget.cardType == CardType.tefsir)
+                          ? Colors.black.withOpacity(0.3)
+                          : Colors.white.withOpacity(0.08),
+                      border: Border.all(
+                        color: widget.isCompleted 
+                            ? effectiveAccentColor.withOpacity(0.4)
+                            : Colors.white.withOpacity(0.2),
+                        width: 1.5,
+                      ),
+                      gradient: (widget.cardType != CardType.verse && widget.cardType != CardType.tefsir)
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withOpacity(0.18),
+                                Colors.white.withOpacity(0.06),
+                                Colors.white.withOpacity(0.02),
+                              ],
+                              stops: const [0.0, 0.3, 1.0],
+                            )
+                          : null,
+                    ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -778,6 +766,7 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                     ],
                   ),
                 ),
+                ],
               ),
             ),
           );

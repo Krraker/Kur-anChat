@@ -66,43 +66,46 @@ class _CalendarPopupState extends State<CalendarPopup> {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: Colors.white.withOpacity(0.1),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1.5,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Material(
+          color: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  color: Colors.white.withOpacity(0.1),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.15),
+                      Colors.white.withOpacity(0.05),
+                    ],
+                  ),
                 ),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withOpacity(0.15),
-                    Colors.white.withOpacity(0.05),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    _buildHeader(),
+                    
+                    // Weekday labels
+                    _buildWeekdayLabels(),
+                    
+                    // Calendar grid
+                    _buildCalendarGrid(),
+                    
+                    // Footer with Hijri date
+                    _buildFooter(),
                   ],
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header
-                  _buildHeader(),
-                  
-                  // Weekday labels
-                  _buildWeekdayLabels(),
-                  
-                  // Calendar grid
-                  _buildCalendarGrid(),
-                  
-                  // Footer with Hijri date
-                  _buildFooter(),
-                ],
               ),
             ),
           ),
@@ -118,7 +121,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+      padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -126,23 +129,24 @@ class _CalendarPopupState extends State<CalendarPopup> {
             icon: Icon(
               Icons.chevron_left_rounded,
               color: Colors.white.withOpacity(0.8),
-              size: 28,
+              size: 32,
             ),
             onPressed: _previousMonth,
           ),
           Text(
             '${monthNames[_currentMonth.month - 1]} ${_currentMonth.year}',
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
               color: Colors.white,
+              decoration: TextDecoration.none,
             ),
           ),
           IconButton(
             icon: Icon(
               Icons.chevron_right_rounded,
               color: Colors.white.withOpacity(0.8),
-              size: 28,
+              size: 32,
             ),
             onPressed: _nextMonth,
           ),
@@ -155,22 +159,23 @@ class _CalendarPopupState extends State<CalendarPopup> {
     const weekdays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
     
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: weekdays.map((day) {
           final isWeekend = day == 'Cmt' || day == 'Paz';
           return SizedBox(
-            width: 36,
+            width: 42,
             child: Text(
               day,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isWeekend 
                     ? Colors.white.withOpacity(0.4)
                     : Colors.white.withOpacity(0.6),
+                decoration: TextDecoration.none,
               ),
             ),
           );
@@ -194,7 +199,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
     
     // Add empty spaces for days before the first day of month
     for (int i = 1; i < startWeekday; i++) {
-      dayWidgets.add(const SizedBox(width: 36, height: 36));
+      dayWidgets.add(const SizedBox(width: 42, height: 42));
     }
     
     // Add day numbers
@@ -212,8 +217,8 @@ class _CalendarPopupState extends State<CalendarPopup> {
             });
           },
           child: Container(
-            width: 36,
-            height: 36,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isSelected
@@ -224,7 +229,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
               border: isToday && !isSelected
                   ? Border.all(
                       color: GlobalAppStyle.accentColor,
-                      width: 1.5,
+                      width: 2,
                     )
                   : null,
             ),
@@ -232,13 +237,14 @@ class _CalendarPopupState extends State<CalendarPopup> {
               child: Text(
                 day.toString(),
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected
                       ? Colors.white
                       : isToday
                           ? GlobalAppStyle.accentColor
                           : Colors.white.withOpacity(0.9),
+                  decoration: TextDecoration.none,
                 ),
               ),
             ),
@@ -248,10 +254,10 @@ class _CalendarPopupState extends State<CalendarPopup> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Wrap(
-        spacing: (MediaQuery.of(context).size.width - 48 - 36 * 7) / 6,
-        runSpacing: 8,
+        spacing: (MediaQuery.of(context).size.width - 32 - 42 * 7) / 6,
+        runSpacing: 10,
         alignment: WrapAlignment.start,
         children: dayWidgets,
       ),
@@ -262,7 +268,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
     // Simple Hijri date approximation (for demo purposes)
     // In production, use a proper Hijri calendar library
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -278,16 +284,17 @@ class _CalendarPopupState extends State<CalendarPopup> {
             children: [
               Icon(
                 Icons.brightness_3_rounded,
-                size: 16,
+                size: 18,
                 color: GlobalAppStyle.accentColor.withOpacity(0.8),
               ),
               const SizedBox(width: 8),
               Text(
                 '5 Cemaziyelahir 1446',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Colors.white.withOpacity(0.7),
+                  decoration: TextDecoration.none,
                 ),
               ),
             ],
@@ -301,10 +308,10 @@ class _CalendarPopupState extends State<CalendarPopup> {
               });
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: GlobalAppStyle.accentColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: GlobalAppStyle.accentColor.withOpacity(0.4),
                 ),
@@ -312,9 +319,10 @@ class _CalendarPopupState extends State<CalendarPopup> {
               child: Text(
                 'Bugün',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: GlobalAppStyle.accentColor,
+                  decoration: TextDecoration.none,
                 ),
               ),
             ),
