@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/app_gradient_background.dart';
 import '../../widgets/onboarding/continue_button.dart';
 import '../../styles/styles.dart';
@@ -6,11 +7,13 @@ import '../../styles/styles.dart';
 class PaywallScreen extends StatefulWidget {
   final VoidCallback onContinue;
   final VoidCallback onSkip;
+  final String? language;
 
   const PaywallScreen({
     super.key,
     required this.onContinue,
     required this.onSkip,
+    this.language,
   });
 
   @override
@@ -20,6 +23,8 @@ class PaywallScreen extends StatefulWidget {
 class _PaywallScreenState extends State<PaywallScreen> {
   bool _wantsTrial = true;
   int _selectedPlan = 0; // 0 = weekly, 1 = yearly
+  
+  bool get isEnglish => widget.language == 'en';
 
   @override
   Widget build(BuildContext context) {
@@ -45,63 +50,41 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      // Illustration
-                      SizedBox(
-                        height: 180,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Clouds
-                            Positioned(
-                              left: 20,
-                              top: 30,
-                              child: _buildCloud(60),
-                            ),
-                            Positioned(
-                              right: 30,
-                              top: 60,
-                              child: _buildCloud(50),
-                            ),
-                            Positioned(
-                              left: 60,
-                              bottom: 40,
-                              child: _buildCloud(40),
-                            ),
-                            // Moon/Sun with dove
-                            Center(
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      GlobalAppStyle.accentColor.withOpacity(0.3),
-                                      GlobalAppStyle.accentColor.withOpacity(0.1),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.auto_awesome,
-                                    size: 48,
-                                    color: GlobalAppStyle.accentColor,
-                                  ),
-                                ),
-                              ),
+                      // App icon with Allah SVG
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: GlobalAppStyle.accentColor,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: GlobalAppStyle.accentColor.withOpacity(0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icons/allah_icon.svg',
+                            width: 56,
+                            height: 56,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       
                       // Title
-                      const Text(
-                        'İman Anlarını Kaçırmayın',
+                      Text(
+                        isEnglish ? 'Never Miss a Moment of Faith' : 'İman Anlarını Kaçırmayın',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -112,22 +95,22 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       const SizedBox(height: 24),
                       
                       // Features
-                      _buildFeatureItem('Kişiselleştirilmiş günlük ayetler'),
+                      _buildFeatureItem(isEnglish ? 'Personalized daily verses' : 'Kişiselleştirilmiş günlük ayetler'),
                       const SizedBox(height: 12),
-                      _buildFeatureItem('Sınırsız sohbet ve soru sorma'),
+                      _buildFeatureItem(isEnglish ? 'Unlimited chat and questions' : 'Sınırsız sohbet ve soru sorma'),
                       const SizedBox(height: 12),
-                      _buildFeatureItem('Sesli tefsir ve dua'),
+                      _buildFeatureItem(isEnglish ? 'Audio tafsir and prayers' : 'Sesli tefsir ve dua'),
                       const SizedBox(height: 12),
-                      _buildFeatureItem('Ana ekran widget\'ı'),
+                      _buildFeatureItem(isEnglish ? 'Home screen widget' : 'Ana ekran widget\'ı'),
                       
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       
                       // Trial toggle
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.1),
                           ),
@@ -136,57 +119,62 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Uygulamayı ücretsiz denemek istiyorum',
+                                isEnglish ? 'I want to try the app for free' : 'Uygulamayı ücretsiz denemek istiyorum',
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   color: Colors.white.withOpacity(0.9),
                                 ),
                               ),
                             ),
-                            Switch(
-                              value: _wantsTrial,
-                              onChanged: (value) {
-                                setState(() => _wantsTrial = value);
-                              },
-                              activeColor: GlobalAppStyle.accentColor,
+                            Transform.scale(
+                              scale: 0.85,
+                              child: Switch(
+                                value: _wantsTrial,
+                                onChanged: (value) {
+                                  setState(() => _wantsTrial = value);
+                                },
+                                activeColor: GlobalAppStyle.accentColor,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
                       
                       // Pricing options
                       _buildPricingOption(
-                        title: '7 Gün Ücretsiz Deneme',
-                        subtitle: 'Sonra aylık ₺49,99. Şimdi ödeme yok.',
+                        title: isEnglish ? '7 Days Free Trial' : '7 Gün Ücretsiz Deneme',
+                        subtitle: isEnglish ? 'Then \$4.99/month. No payment now.' : 'Sonra aylık ₺49,99. Şimdi ödeme yok.',
                         isSelected: _selectedPlan == 0,
                         onTap: () => setState(() => _selectedPlan = 0),
                       ),
                       
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       
                       _buildPricingOption(
-                        title: 'Yıllık Erişim',
-                        subtitle: 'Yıllık ₺299,99',
+                        title: isEnglish ? 'Yearly Access' : 'Yıllık Erişim',
+                        subtitle: isEnglish ? 'Billed yearly at \$29.99' : 'Yıllık ₺299,99',
                         isSelected: _selectedPlan == 1,
-                        badge: '%50 TASARRUF',
+                        badge: isEnglish ? 'SAVE 50%' : '%50 TASARRUF',
                         onTap: () => setState(() => _selectedPlan = 1),
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
                       
                       // Cancellation note
                       Text(
-                        '15 Aralık 2025\'e kadar istediğiniz zaman iptal edin.\nRisk yok, ücret yok.',
+                        isEnglish 
+                            ? 'Cancel anytime before Dec 15, 2025. No risks, no charges.'
+                            : '15 Aralık 2025\'e kadar istediğiniz zaman iptal edin. Risk yok, ücret yok.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Colors.white.withOpacity(0.5),
                         ),
                       ),
                       
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -198,7 +186,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 child: Column(
                   children: [
                     ContinueButton(
-                      text: 'Ücretsiz Dene',
+                      text: isEnglish ? 'Try for Free' : 'Ücretsiz Dene',
                       onPressed: widget.onContinue,
                     ),
                     
@@ -208,11 +196,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildTermsLink('Kullanım Şartları'),
+                        _buildTermsLink(isEnglish ? 'Terms of Use' : 'Kullanım Şartları'),
                         const SizedBox(width: 16),
-                        _buildTermsLink('Gizlilik Politikası'),
+                        _buildTermsLink(isEnglish ? 'Privacy Policy' : 'Gizlilik Politikası'),
                         const SizedBox(width: 16),
-                        _buildTermsLink('Geri Yükle'),
+                        _buildTermsLink(isEnglish ? 'Restore' : 'Geri Yükle'),
                       ],
                     ),
                   ],
@@ -221,17 +209,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCloud(double size) {
-    return Container(
-      width: size,
-      height: size * 0.6,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(size),
       ),
     );
   }
@@ -276,14 +253,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? Colors.white.withOpacity(0.08)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected 
+            color: isSelected
                 ? Colors.white.withOpacity(0.5)
                 : Colors.white.withOpacity(0.15),
             width: isSelected ? 2 : 1,

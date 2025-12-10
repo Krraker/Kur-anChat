@@ -6,6 +6,7 @@ import '../../widgets/onboarding/continue_button.dart';
 import '../../widgets/onboarding/selection_card.dart';
 import '../../styles/styles.dart';
 import '../main_navigation.dart';
+import 'steps/language_step.dart';
 import 'steps/age_step.dart';
 import 'steps/mezhep_step.dart';
 import 'steps/translation_step.dart';
@@ -27,13 +28,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentStep = 0;
   
   // User selections
+  String? _selectedLanguage;
   String? _selectedAge;
   String? _selectedMezhep;
   String? _selectedTranslation;
   final Set<String> _selectedGoals = {};
   String? _userInterests;
 
-  static const int _totalSteps = 7;
+  static const int _totalSteps = 8;
 
   @override
   void dispose() {
@@ -72,6 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool('onboarding_completed', true);
     
     // Save user preferences
+    if (_selectedLanguage != null) await prefs.setString('user_language', _selectedLanguage!);
     if (_selectedAge != null) await prefs.setString('user_age', _selectedAge!);
     if (_selectedMezhep != null) await prefs.setString('user_mezhep', _selectedMezhep!);
     if (_selectedTranslation != null) await prefs.setString('user_translation', _selectedTranslation!);
@@ -89,6 +92,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PaywallScreen(
+          language: _selectedLanguage,
           onContinue: () {
             Navigator.of(context).pop();
             _completeOnboarding();
@@ -105,16 +109,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool get _canContinue {
     switch (_currentStep) {
       case 0:
-        return _selectedAge != null;
+        return _selectedLanguage != null;
       case 1:
-        return _selectedMezhep != null;
+        return _selectedAge != null;
       case 2:
-        return _selectedTranslation != null;
+        return _selectedMezhep != null;
       case 3:
-        return _selectedGoals.isNotEmpty;
+        return _selectedTranslation != null;
       case 4:
+        return _selectedGoals.isNotEmpty;
       case 5:
       case 6:
+      case 7:
         return true; // Optional steps
       default:
         return true;
@@ -144,31 +150,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    // Step 1: Age
+                    // Step 1: Language
+                    LanguageStep(
+                      selectedLanguage: _selectedLanguage,
+                      onLanguageSelected: (language) {
+                        setState(() => _selectedLanguage = language);
+                      },
+                    ),
+                    
+                    // Step 2: Age
                     AgeStep(
                       selectedAge: _selectedAge,
                       onAgeSelected: (age) {
                         setState(() => _selectedAge = age);
                       },
+                      language: _selectedLanguage,
                     ),
                     
-                    // Step 2: Mezhep (Denomination)
+                    // Step 3: Mezhep (Denomination)
                     MezhepStep(
                       selectedMezhep: _selectedMezhep,
                       onMezhepSelected: (mezhep) {
                         setState(() => _selectedMezhep = mezhep);
                       },
+                      language: _selectedLanguage,
                     ),
                     
-                    // Step 3: Translation
+                    // Step 4: Translation
                     TranslationStep(
                       selectedTranslation: _selectedTranslation,
                       onTranslationSelected: (translation) {
                         setState(() => _selectedTranslation = translation);
                       },
+                      language: _selectedLanguage,
                     ),
                     
-                    // Step 4: Goals
+                    // Step 5: Goals
                     GoalsStep(
                       selectedGoals: _selectedGoals,
                       onGoalToggled: (goal) {
@@ -180,21 +197,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           }
                         });
                       },
+                      language: _selectedLanguage,
                     ),
                     
-                    // Step 5: Interests (text input)
+                    // Step 6: Interests (text input)
                     InterestsStep(
                       interests: _userInterests,
                       onInterestsChanged: (interests) {
                         setState(() => _userInterests = interests);
                       },
+                      language: _selectedLanguage,
                     ),
                     
-                    // Step 6: Widget setup instructions
-                    const WidgetSetupStep(),
+                    // Step 7: Widget setup instructions
+                    WidgetSetupStep(language: _selectedLanguage),
                     
-                    // Step 7: Journey preview
-                    const JourneyPreviewStep(),
+                    // Step 8: Journey preview
+                    JourneyPreviewStep(language: _selectedLanguage),
                   ],
                 ),
               ),
@@ -205,7 +224,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: ContinueButton(
                   onPressed: _canContinue ? _nextStep : null,
                   isEnabled: _canContinue,
-                  text: _currentStep == _totalSteps - 1 ? 'Başla' : 'Devam',
+                  text: _currentStep == _totalSteps - 1 
+                      ? (_selectedLanguage == 'en' ? 'Start' : 'Başla') 
+                      : (_selectedLanguage == 'en' ? 'Continue' : 'Devam'),
                 ),
               ),
             ],

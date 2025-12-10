@@ -63,8 +63,8 @@ class _ChatScreenState extends State<ChatScreen> {
         return Scaffold(
           body: AppGradientBackground(
             child: Stack(
-              children: [
-                // Content
+            children: [
+              // Content
               if (_showChat || hasMessages)
                 _buildChatView(chatProvider)
               else
@@ -204,7 +204,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   bottom: 130,
                   child: _buildInputBar(chatProvider),
                 ),
-              ],
+            ],
             ),
           ),
         );
@@ -480,11 +480,11 @@ class _ChatScreenState extends State<ChatScreen> {
               borderRadius: BorderRadius.circular(16),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
                     color: Colors.white.withOpacity(0.15),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.3),
@@ -500,13 +500,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       ],
                       stops: const [0.0, 0.3, 1.0],
                     ),
-                  ),
+              ),
                   child: const Center(
-                    child: Text(
-                      'Yeni sohbet başlat',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                child: Text(
+                  'Yeni sohbet başlat',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),

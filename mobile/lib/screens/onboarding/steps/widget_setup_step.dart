@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../styles/styles.dart';
 
 class WidgetSetupStep extends StatefulWidget {
-  const WidgetSetupStep({super.key});
+  final String? language;
+  
+  const WidgetSetupStep({super.key, this.language});
 
   @override
   State<WidgetSetupStep> createState() => _WidgetSetupStepState();
@@ -12,23 +14,43 @@ class _WidgetSetupStepState extends State<WidgetSetupStep> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<Map<String, dynamic>> _steps = [
-    {
-      'title': 'Ana ekranınızı iman ile doldurun',
-      'description': 'Telefonunuzun ana ekranında boş bir alana basılı tutun',
-      'icon': Icons.touch_app,
-    },
-    {
-      'title': 'Ana ekranınızı iman ile doldurun',
-      'description': 'Sol üst köşedeki "+" butonuna dokunun',
-      'icon': Icons.add_circle_outline,
-    },
-    {
-      'title': 'Ana ekranınızı iman ile doldurun',
-      'description': '"Kur\'an Chat" arayın ve widget\'ı seçin',
-      'icon': Icons.search,
-    },
-  ];
+  bool get isEnglish => widget.language == 'en';
+
+  List<Map<String, dynamic>> get _steps => isEnglish 
+    ? [
+        {
+          'title': 'Make Your Home Screen a Place of Faith',
+          'description': 'Touch and hold an empty area on your phone\'s home screen',
+          'icon': Icons.touch_app,
+        },
+        {
+          'title': 'Make Your Home Screen a Place of Faith',
+          'description': 'Tap the "+" button in the upper-left corner',
+          'icon': Icons.add_circle_outline,
+        },
+        {
+          'title': 'Make Your Home Screen a Place of Faith',
+          'description': 'Search for "Quran Chat" and select the widget',
+          'icon': Icons.search,
+        },
+      ]
+    : [
+        {
+          'title': 'Ana ekranınızı iman ile doldurun',
+          'description': 'Telefonunuzun ana ekranında boş bir alana basılı tutun',
+          'icon': Icons.touch_app,
+        },
+        {
+          'title': 'Ana ekranınızı iman ile doldurun',
+          'description': 'Sol üst köşedeki "+" butonuna dokunun',
+          'icon': Icons.add_circle_outline,
+        },
+        {
+          'title': 'Ana ekranınızı iman ile doldurun',
+          'description': '"Kur\'an Chat" arayın ve widget\'ı seçin',
+          'icon': Icons.search,
+        },
+      ];
 
   @override
   void dispose() {

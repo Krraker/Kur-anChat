@@ -155,27 +155,27 @@ class _MainNavigationState extends State<MainNavigation> {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
                 transform: Matrix4.translationValues(0, isSelected ? -6 : 0, 0),
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected 
-                      ? GlobalAppStyle.accentColor.withOpacity(0.2)
-                      : Colors.transparent,
-                ),
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected 
+                        ? GlobalAppStyle.accentColor.withOpacity(0.2)
+                        : Colors.transparent,
+                  ),
                 child: Center(
                   child: item.hasSvg
                       ? SvgPicture.asset(
-                          item.svgPath!,
+                  item.svgPath!,
                           width: isSelected ? 26 : 24,
                           height: isSelected ? 26 : 24,
-                          colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-                        )
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                )
                       : Icon(
-                          isSelected ? item.activeIcon : item.icon,
-                          color: iconColor,
+                  isSelected ? item.activeIcon : item.icon,
+                  color: iconColor,
                           size: isSelected ? 26 : 24,
-                        ),
+                ),
                 ),
               ),
               // Animated text - moves down when selected
@@ -185,12 +185,12 @@ class _MainNavigationState extends State<MainNavigation> {
                 transform: Matrix4.translationValues(0, isSelected ? 4 : 0, 0),
                 child: AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
+                style: TextStyle(
                     fontSize: isSelected ? 11 : 10,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: isSelected 
-                        ? GlobalAppStyle.accentColor
-                        : Colors.white.withOpacity(0.5),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected 
+                      ? GlobalAppStyle.accentColor
+                      : Colors.white.withOpacity(0.5),
                   ),
                   child: Text(item.label),
                 ),
@@ -237,8 +237,8 @@ class PlaceholderScreen extends StatelessWidget {
     return Scaffold(
       body: AppGradientBackground(
         child: Stack(
-          children: [
-            // Top gradient overlay with blur
+        children: [
+          // Top gradient overlay with blur
           Positioned(
             left: 0,
             right: 0,
@@ -385,7 +385,7 @@ class PlaceholderScreen extends StatelessWidget {
               ),
             ),
           ),
-          ],
+        ],
         ),
       ),
     );

@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class InterestsStep extends StatefulWidget {
   final String? interests;
   final Function(String) onInterestsChanged;
+  final String? language;
 
   const InterestsStep({
     super.key,
     required this.interests,
     required this.onInterestsChanged,
+    this.language,
   });
 
   @override
@@ -16,6 +18,8 @@ class InterestsStep extends StatefulWidget {
 
 class _InterestsStepState extends State<InterestsStep> {
   late TextEditingController _controller;
+
+  bool get isEnglish => widget.language == 'en';
 
   @override
   void initState() {
@@ -37,9 +41,11 @@ class _InterestsStepState extends State<InterestsStep> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          const Text(
-            'Kur\'an geniş bir kaynak. Hangi konular ilginizi çekiyor?',
-            style: TextStyle(
+          Text(
+            isEnglish 
+                ? 'The Quran is vast. What topics interest you?'
+                : 'Kur\'an geniş bir kaynak. Hangi konular ilginizi çekiyor?',
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -50,7 +56,9 @@ class _InterestsStepState extends State<InterestsStep> {
           const SizedBox(height: 12),
           
           Text(
-            'Gizliliğiniz garanti altındadır ve bilgileriniz gizli kalacaktır.',
+            isEnglish 
+                ? 'Your privacy is guaranteed and your information will remain confidential.'
+                : 'Gizliliğiniz garanti altındadır ve bilgileriniz gizli kalacaktır.',
             style: TextStyle(
               fontSize: 15,
               color: Colors.white.withOpacity(0.7),
@@ -79,7 +87,7 @@ class _InterestsStepState extends State<InterestsStep> {
                 fontSize: 16,
               ),
               decoration: InputDecoration(
-                hintText: 'Buraya yazın...',
+                hintText: isEnglish ? 'Describe here...' : 'Buraya yazın...',
                 hintStyle: TextStyle(
                   color: Colors.white.withOpacity(0.4),
                   fontSize: 16,
@@ -94,7 +102,9 @@ class _InterestsStepState extends State<InterestsStep> {
           const SizedBox(height: 16),
           
           Text(
-            'Gizliliğiniz garanti altındadır ve bilgileriniz gizli kalacaktır.',
+            isEnglish 
+                ? 'Your privacy is guaranteed and your information will remain confidential.'
+                : 'Gizliliğiniz garanti altındadır ve bilgileriniz gizli kalacaktır.',
             style: TextStyle(
               fontSize: 13,
               color: Colors.white.withOpacity(0.5),

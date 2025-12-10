@@ -1,11 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
 import '../widgets/home/weekly_progress_section.dart';
 import '../widgets/home/daily_journey_card.dart';
 import '../widgets/home/islamic_calendar_banner.dart';
+import '../widgets/home/calendar_popup.dart';
 import 'main_navigation.dart';
+import 'onboarding/onboarding_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -49,34 +52,33 @@ class HomeScreen extends StatelessWidget {
                 
                 const SizedBox(height: 24),
                 
-                // Activity Cards
-                DailyJourneyCard(
+                // Activity Cards - Expandable
+                ExpandableDailyJourneyCard(
                   title: 'Günün Ayeti',
                   duration: '1 DK',
                   icon: Icons.auto_stories,
-                  isCompleted: true,
-                  onTap: () => _navigateToChat(context),
+                  isCompleted: false,
+                  cardType: CardType.verse,
                 ),
-                
+
                 const SizedBox(height: 12),
-                
-                DailyJourneyCard(
+
+                ExpandableDailyJourneyCard(
                   title: 'Kişisel Tefsir',
                   duration: '2 DK',
                   icon: Icons.psychology,
-                  isCompleted: true,
-                  onTap: () => _navigateToChat(context),
+                  isCompleted: false,
+                  cardType: CardType.tefsir,
                 ),
-                
+
                 const SizedBox(height: 12),
-                
-                DailyJourneyCard(
+
+                ExpandableDailyJourneyCard(
                   title: 'Günün Duası',
                   duration: '1 DK',
                   icon: Icons.favorite_border,
                   isCompleted: false,
-                  isExpandable: true,
-                  onTap: () => _navigateToChat(context),
+                  cardType: CardType.prayer,
                 ),
                 
                 const SizedBox(height: 12),
@@ -156,35 +158,47 @@ class HomeScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Profile Avatar
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          GlobalAppStyle.accentColor,
-                          GlobalAppStyle.accentColor.withOpacity(0.7),
+                  // Profile Avatar (Long press to reset onboarding)
+                  GestureDetector(
+                    onLongPress: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('onboarding_completed', false);
+                      if (context.mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            GlobalAppStyle.accentColor,
+                            GlobalAppStyle.accentColor.withOpacity(0.7),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: GlobalAppStyle.accentColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
                         ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'K',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      child: const Center(
+                        child: Text(
+                          'K',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),

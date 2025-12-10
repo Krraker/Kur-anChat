@@ -4,12 +4,16 @@ import '../../../widgets/onboarding/selection_card.dart';
 class AgeStep extends StatelessWidget {
   final String? selectedAge;
   final Function(String) onAgeSelected;
+  final String? language;
 
   const AgeStep({
     super.key,
     required this.selectedAge,
     required this.onAgeSelected,
+    this.language,
   });
+
+  bool get isEnglish => language == 'en';
 
   static const List<String> ageGroups = [
     '13-17',
@@ -28,9 +32,9 @@ class AgeStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          const Text(
-            'Yaş grubunuz nedir?',
-            style: TextStyle(
+          Text(
+            isEnglish ? 'What\'s your age group?' : 'Yaş grubunuz nedir?',
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -41,7 +45,7 @@ class AgeStep extends StatelessWidget {
           const SizedBox(height: 12),
           
           Text(
-            'Deneyiminizi kişiselleştirmemize yardımcı olur.',
+            isEnglish ? 'This helps us personalize your experience.' : 'Deneyiminizi kişiselleştirmemize yardımcı olur.',
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.7),

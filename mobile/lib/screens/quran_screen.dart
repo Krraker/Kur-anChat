@@ -60,12 +60,12 @@ class _QuranScreenState extends State<QuranScreen> {
     return Scaffold(
       body: AppGradientBackground(
         child: Stack(
-          children: [
-            // Main content
-            Column(
-              children: [
-                // Top gradient overlay with blur
-                ClipRect(
+        children: [
+          // Main content
+          Column(
+            children: [
+              // Top gradient overlay with blur
+              ClipRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
@@ -240,7 +240,7 @@ class _QuranScreenState extends State<QuranScreen> {
               ),
             ),
           ),
-          ],
+        ],
         ),
       ),
     );

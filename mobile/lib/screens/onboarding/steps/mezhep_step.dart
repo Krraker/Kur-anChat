@@ -4,20 +4,24 @@ import '../../../widgets/onboarding/selection_card.dart';
 class MezhepStep extends StatelessWidget {
   final String? selectedMezhep;
   final Function(String) onMezhepSelected;
+  final String? language;
 
   const MezhepStep({
     super.key,
     required this.selectedMezhep,
     required this.onMezhepSelected,
+    this.language,
   });
 
-  static const List<Map<String, String>> mezhepOptions = [
-    {'name': 'Hanefi', 'desc': 'Türkiye\'de en yaygın mezhep'},
-    {'name': 'Şafii', 'desc': 'Güneydoğu Anadolu ve Kürt bölgelerinde yaygın'},
-    {'name': 'Maliki', 'desc': 'Kuzey Afrika\'da yaygın'},
-    {'name': 'Hanbeli', 'desc': 'Suudi Arabistan\'da yaygın'},
-    {'name': 'Caferi', 'desc': 'Şii İslam mezhebi'},
-    {'name': 'Mezhepsiz / Diğer', 'desc': 'Belirli bir mezhebe bağlı değilim'},
+  bool get isEnglish => language == 'en';
+
+  List<Map<String, String>> get mezhepOptions => [
+    {'name': 'Hanafi', 'desc': isEnglish ? 'Most common in Turkey' : 'Türkiye\'de en yaygın mezhep'},
+    {'name': 'Shafi\'i', 'desc': isEnglish ? 'Common in Southeast Asia' : 'Güneydoğu Anadolu ve Kürt bölgelerinde yaygın'},
+    {'name': 'Maliki', 'desc': isEnglish ? 'Common in North Africa' : 'Kuzey Afrika\'da yaygın'},
+    {'name': 'Hanbali', 'desc': isEnglish ? 'Common in Saudi Arabia' : 'Suudi Arabistan\'da yaygın'},
+    {'name': 'Ja\'fari', 'desc': isEnglish ? 'Shia Islam school' : 'Şii İslam mezhebi'},
+    {'name': isEnglish ? 'Non-denominational / Other' : 'Mezhepsiz / Diğer', 'desc': isEnglish ? 'I don\'t follow a specific school' : 'Belirli bir mezhebe bağlı değilim'},
   ];
 
   @override
@@ -28,9 +32,9 @@ class MezhepStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          const Text(
-            'Mezhebinizi belirtir misiniz?',
-            style: TextStyle(
+          Text(
+            isEnglish ? 'What\'s your Islamic school of thought?' : 'Mezhebinizi belirtir misiniz?',
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -41,7 +45,7 @@ class MezhepStep extends StatelessWidget {
           const SizedBox(height: 12),
           
           Text(
-            'Size uygun kaynakları sunmamıza yardımcı olur.',
+            isEnglish ? 'This helps us provide relevant resources.' : 'Size uygun kaynakları sunmamıza yardımcı olur.',
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.7),

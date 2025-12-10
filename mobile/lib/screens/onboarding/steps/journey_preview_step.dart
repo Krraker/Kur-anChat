@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../styles/styles.dart';
 
 class JourneyPreviewStep extends StatelessWidget {
-  const JourneyPreviewStep({super.key});
+  final String? language;
+  
+  const JourneyPreviewStep({super.key, this.language});
+
+  bool get isEnglish => language == 'en';
 
   @override
   Widget build(BuildContext context) {
@@ -10,7 +15,7 @@ class JourneyPreviewStep extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          // App icon
+          // App icon with Allah SVG
           Container(
             width: 100,
             height: 100,
@@ -25,20 +30,26 @@ class JourneyPreviewStep extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.menu_book,
-              color: Colors.white,
-              size: 48,
+            child: Center(
+              child: SvgPicture.asset(
+                'assets/icons/allah_icon.svg',
+                width: 56,
+                height: 56,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
           ),
           
           const SizedBox(height: 24),
           
           // Title
-          const Text(
-            'İman Yolculuğunuza Başlayın',
+          Text(
+            isEnglish ? 'Begin Your Faith Journey' : 'İman Yolculuğunuza Başlayın',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -49,7 +60,9 @@ class JourneyPreviewStep extends StatelessWidget {
           const SizedBox(height: 12),
           
           Text(
-            'İmanınızı güçlendirmenize ve zorluklarla başa çıkmanıza yardımcı olmak için buradayız.',
+            isEnglish 
+                ? 'We\'re here to help you strengthen your faith and overcome life\'s challenges.'
+                : 'İmanınızı güçlendirmenize ve zorluklarla başa çıkmanıza yardımcı olmak için buradayız.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
@@ -73,13 +86,13 @@ class JourneyPreviewStep extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatItem(Icons.calendar_today, '7 Gün'),
+                _buildStatItem(Icons.calendar_today, isEnglish ? '7 Days' : '7 Gün'),
                 Container(
                   width: 1,
                   height: 30,
                   color: Colors.white.withOpacity(0.2),
                 ),
-                _buildStatItem(Icons.access_time, '< 5 dk/gün'),
+                _buildStatItem(Icons.access_time, isEnglish ? '< 5 min/day' : '< 5 dk/gün'),
               ],
             ),
           ),
@@ -89,8 +102,8 @@ class JourneyPreviewStep extends StatelessWidget {
           // Journey cards
           _buildJourneyCard(
             day: 1,
-            title: 'Tefekkür ile Başla',
-            description: 'Günün ayeti ve dua ile güne başlayın.',
+            title: isEnglish ? 'Start with Reflection' : 'Tefekkür ile Başla',
+            description: isEnglish ? 'Begin your day with the verse and prayer.' : 'Günün ayeti ve dua ile güne başlayın.',
             icon: Icons.wb_sunny,
             iconColor: Colors.orange,
           ),
@@ -99,8 +112,8 @@ class JourneyPreviewStep extends StatelessWidget {
           
           _buildJourneyCard(
             day: 2,
-            title: 'Anlayışını Derinleştir',
-            description: 'Tefsir ve hikmetleri keşfedin.',
+            title: isEnglish ? 'Deepen Your Understanding' : 'Anlayışını Derinleştir',
+            description: isEnglish ? 'Explore tafsir and wisdom.' : 'Tefsir ve hikmetleri keşfedin.',
             icon: Icons.psychology,
             iconColor: Colors.blue,
           ),
@@ -109,8 +122,8 @@ class JourneyPreviewStep extends StatelessWidget {
           
           _buildJourneyCard(
             day: 3,
-            title: 'İstikrara Odaklan',
-            description: 'Günlük alışkanlık oluşturun.',
+            title: isEnglish ? 'Focus on Consistency' : 'İstikrara Odaklan',
+            description: isEnglish ? 'Build a daily habit.' : 'Günlük alışkanlık oluşturun.',
             icon: Icons.trending_up,
             iconColor: Colors.green,
           ),
@@ -179,7 +192,7 @@ class JourneyPreviewStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'GÜN $day',
+                  isEnglish ? 'DAY $day' : 'GÜN $day',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,

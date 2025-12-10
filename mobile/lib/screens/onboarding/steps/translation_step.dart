@@ -4,22 +4,34 @@ import '../../../widgets/onboarding/selection_card.dart';
 class TranslationStep extends StatelessWidget {
   final String? selectedTranslation;
   final Function(String) onTranslationSelected;
+  final String? language;
 
   const TranslationStep({
     super.key,
     required this.selectedTranslation,
     required this.onTranslationSelected,
+    this.language,
   });
 
-  static const List<Map<String, String>> translationOptions = [
-    {'name': 'Diyanet İşleri', 'desc': 'Resmi Diyanet meali'},
-    {'name': 'Elmalılı Hamdi Yazır', 'desc': 'Klasik Osmanlı tefsiri'},
-    {'name': 'Süleyman Ateş', 'desc': 'Modern akademik çeviri'},
-    {'name': 'Yaşar Nuri Öztürk', 'desc': 'Çağdaş yorum'},
-    {'name': 'Muhammed Esed', 'desc': 'Uluslararası tanınmış meal'},
-    {'name': 'Bayraktar Bayraklı', 'desc': 'Yeni nesil tefsir'},
-    {'name': 'Edip Yüksel', 'desc': 'Reformist çeviri'},
-  ];
+  bool get isEnglish => language == 'en';
+
+  List<Map<String, String>> get translationOptions => isEnglish 
+    ? [
+        {'name': 'Sahih International', 'desc': 'Clear modern English'},
+        {'name': 'Yusuf Ali', 'desc': 'Classic English translation'},
+        {'name': 'Pickthall', 'desc': 'Literary English style'},
+        {'name': 'Dr. Mustafa Khattab', 'desc': 'The Clear Quran'},
+        {'name': 'Muhammad Asad', 'desc': 'Internationally recognized'},
+        {'name': 'Abdul Haleem', 'desc': 'Oxford World\'s Classics'},
+      ]
+    : [
+        {'name': 'Diyanet İşleri', 'desc': 'Resmi Diyanet meali'},
+        {'name': 'Elmalılı Hamdi Yazır', 'desc': 'Klasik Osmanlı tefsiri'},
+        {'name': 'Süleyman Ateş', 'desc': 'Modern akademik çeviri'},
+        {'name': 'Yaşar Nuri Öztürk', 'desc': 'Çağdaş yorum'},
+        {'name': 'Muhammed Esed', 'desc': 'Uluslararası tanınmış meal'},
+        {'name': 'Bayraktar Bayraklı', 'desc': 'Yeni nesil tefsir'},
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +41,9 @@ class TranslationStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          const Text(
-            'Tercih ettiğiniz Kur\'an meali?',
-            style: TextStyle(
+          Text(
+            isEnglish ? 'Preferred Quran translation?' : 'Tercih ettiğiniz Kur\'an meali?',
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -42,7 +54,7 @@ class TranslationStep extends StatelessWidget {
           const SizedBox(height: 12),
           
           Text(
-            'İstediğiniz zaman değiştirebilirsiniz.',
+            isEnglish ? 'You can change this anytime.' : 'İstediğiniz zaman değiştirebilirsiniz.',
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.7),

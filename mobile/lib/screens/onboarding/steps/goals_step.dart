@@ -4,23 +4,38 @@ import '../../../widgets/onboarding/selection_card.dart';
 class GoalsStep extends StatelessWidget {
   final Set<String> selectedGoals;
   final Function(String) onGoalToggled;
+  final String? language;
 
   const GoalsStep({
     super.key,
     required this.selectedGoals,
     required this.onGoalToggled,
+    this.language,
   });
 
-  static const List<Map<String, dynamic>> goalOptions = [
-    {'name': 'Kur\'an\'ı daha iyi anlamak', 'icon': Icons.auto_stories},
-    {'name': 'Günlük manevi gelişim', 'icon': Icons.trending_up},
-    {'name': 'Hayat zorluklarını aşmak', 'icon': Icons.psychology},
-    {'name': 'Namaz ve ibadet bilgisi', 'icon': Icons.access_time},
-    {'name': 'Aile ve ilişkiler', 'icon': Icons.people},
-    {'name': 'İş ve kariyer rehberliği', 'icon': Icons.work},
-    {'name': 'Huzur ve sükûnet bulmak', 'icon': Icons.self_improvement},
-    {'name': 'İslami bilgimi artırmak', 'icon': Icons.school},
-  ];
+  bool get isEnglish => language == 'en';
+
+  List<Map<String, dynamic>> get goalOptions => isEnglish 
+    ? [
+        {'name': 'Understand the Quran better', 'icon': Icons.auto_stories},
+        {'name': 'Daily spiritual growth', 'icon': Icons.trending_up},
+        {'name': 'Overcome life challenges', 'icon': Icons.psychology},
+        {'name': 'Prayer and worship guidance', 'icon': Icons.access_time},
+        {'name': 'Family and relationships', 'icon': Icons.people},
+        {'name': 'Work and career guidance', 'icon': Icons.work},
+        {'name': 'Find peace and tranquility', 'icon': Icons.self_improvement},
+        {'name': 'Increase Islamic knowledge', 'icon': Icons.school},
+      ]
+    : [
+        {'name': 'Kur\'an\'ı daha iyi anlamak', 'icon': Icons.auto_stories},
+        {'name': 'Günlük manevi gelişim', 'icon': Icons.trending_up},
+        {'name': 'Hayat zorluklarını aşmak', 'icon': Icons.psychology},
+        {'name': 'Namaz ve ibadet bilgisi', 'icon': Icons.access_time},
+        {'name': 'Aile ve ilişkiler', 'icon': Icons.people},
+        {'name': 'İş ve kariyer rehberliği', 'icon': Icons.work},
+        {'name': 'Huzur ve sükûnet bulmak', 'icon': Icons.self_improvement},
+        {'name': 'İslami bilgimi artırmak', 'icon': Icons.school},
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +45,9 @@ class GoalsStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          const Text(
-            'Kur\'an size nasıl yardımcı olabilir?',
-            style: TextStyle(
+          Text(
+            isEnglish ? 'How can the Quran help you?' : 'Kur\'an size nasıl yardımcı olabilir?',
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -43,7 +58,7 @@ class GoalsStep extends StatelessWidget {
           const SizedBox(height: 12),
           
           Text(
-            'Birden fazla seçebilirsiniz.',
+            isEnglish ? 'You can select multiple.' : 'Birden fazla seçebilirsiniz.',
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.7),
