@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../styles/styles.dart';
 
 /// Weekly progress calendar showing days of the week with completion status
@@ -208,8 +209,8 @@ class _DayCircle extends StatelessWidget {
                 : Colors.white.withOpacity(0.1),
         border: isCurrent && !isCompleted
             ? Border.all(
-                color: accentColor,
-                width: 2,
+                color: accentColor.withOpacity(0.8),
+                width: 1,
               )
             : null,
         boxShadow: isCompleted || isCurrent
@@ -226,10 +227,14 @@ class _DayCircle extends StatelessWidget {
       ),
       child: Center(
         child: isCompleted
-            ? const Icon(
-                Icons.local_fire_department,
-                color: Colors.white,
-                size: 22,
+            ? SvgPicture.asset(
+                'assets/icons/allah_icon.svg',
+                width: 28,
+                height: 28,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
               )
             : Text(
                 '$dayNumber',

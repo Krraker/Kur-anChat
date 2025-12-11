@@ -7,11 +7,28 @@ import '../widgets/home/weekly_progress_section.dart';
 import '../widgets/home/daily_journey_card.dart';
 import '../widgets/home/islamic_calendar_banner.dart';
 import '../widgets/home/calendar_popup.dart';
-import 'main_navigation.dart';
 import 'onboarding/onboarding_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Track which card is expanded (null = none)
+  CardType? _expandedCard;
+
+  void _onCardExpansionChanged(CardType cardType, bool isExpanded) {
+    setState(() {
+      if (isExpanded) {
+        _expandedCard = cardType;
+      } else if (_expandedCard == cardType) {
+        _expandedCard = null;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,11 +37,13 @@ class HomeScreen extends StatelessWidget {
     const totalActivities = 4;
     const progress = completedActivities / totalActivities;
     
+    final bool hasExpandedCard = _expandedCard != null;
+    
     return Scaffold(
       body: AppGradientBackground(
         child: Stack(
-          children: [
-            // Scrollable content area
+        children: [
+          // Scrollable content area
           SingleChildScrollView(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 72,
@@ -33,16 +52,30 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
+                // Content that gets dimmed when card is expanded
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: hasExpandedCard ? 0.15 : 1.0,
+                  child: const Column(
+                    children: [
+                      SizedBox(height: 20),
                 
                 // Weekly Progress Calendar
-                const WeeklyProgressSection(
+                      WeeklyProgressSection(
                   currentDayIndex: 6, // Sunday (demo)
                   completedDays: [true, true, false, false, false, false, false],
                   streakCount: 2,
                 ),
+                    ],
+                  ),
+                ),
                 
-                const SizedBox(height: 24),
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: hasExpandedCard ? 0.15 : 1.0,
+                  child: const Column(
+                    children: [
+                      SizedBox(height: 24),
                 
                 // Daily Progress Bar
                 DailyProgressBar(
@@ -50,61 +83,88 @@ class HomeScreen extends StatelessWidget {
                   label: 'Bugünkü ilerleme',
                 ),
                 
-                const SizedBox(height: 24),
+                      SizedBox(height: 24),
+                    ],
+                  ),
+                ),
                 
-                // Activity Cards - Expandable
-                ExpandableDailyJourneyCard(
+                // Activity Cards - Expandable (these don't get dimmed when they're the expanded one)
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: hasExpandedCard && _expandedCard != CardType.verse ? 0.15 : 1.0,
+                  child: ExpandableDailyJourneyCard(
                   title: 'Günün Ayeti',
                   duration: '1 DK',
                   icon: Icons.auto_stories,
-                  isCompleted: false,
-                  cardType: CardType.verse,
+                    isCompleted: false,
+                    cardType: CardType.verse,
+                    onExpansionChanged: (isExpanded) => _onCardExpansionChanged(CardType.verse, isExpanded),
+                  ),
                 ),
-
+                
                 const SizedBox(height: 12),
-
-                ExpandableDailyJourneyCard(
+                
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: hasExpandedCard && _expandedCard != CardType.tefsir ? 0.15 : 1.0,
+                  child: ExpandableDailyJourneyCard(
                   title: 'Kişisel Tefsir',
                   duration: '2 DK',
                   icon: Icons.psychology,
-                  isCompleted: false,
-                  cardType: CardType.tefsir,
+                    isCompleted: false,
+                    cardType: CardType.tefsir,
+                    onExpansionChanged: (isExpanded) => _onCardExpansionChanged(CardType.tefsir, isExpanded),
+                  ),
                 ),
-
+                
                 const SizedBox(height: 12),
-
-                ExpandableDailyJourneyCard(
+                
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: hasExpandedCard && _expandedCard != CardType.prayer ? 0.15 : 1.0,
+                  child: ExpandableDailyJourneyCard(
                   title: 'Günün Duası',
                   duration: '1 DK',
                   icon: Icons.favorite_border,
                   isCompleted: false,
-                  cardType: CardType.prayer,
+                    cardType: CardType.prayer,
+                    onExpansionChanged: (isExpanded) => _onCardExpansionChanged(CardType.prayer, isExpanded),
+                  ),
                 ),
                 
                 const SizedBox(height: 12),
                 
-                const DailyRewardCard(
+                // Content below cards gets dimmed
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: hasExpandedCard ? 0.15 : 1.0,
+                  child: const Column(
+                    children: [
+                      DailyRewardCard(
                   isLocked: true,
                 ),
                 
-                const SizedBox(height: 24),
+                      SizedBox(height: 24),
                 
                 // Divider with crescent moon
-                const IconDivider(
+                      IconDivider(
                   icon: Icons.nightlight_round,
                 ),
                 
-                const SizedBox(height: 16),
+                      SizedBox(height: 16),
                 
                 // Islamic Calendar Banner
-                const IslamicCalendarBanner(
+                      IslamicCalendarBanner(
                   hijriDay: 5,
                   hijriMonth: 'Cemaziyelahir',
                   hijriYear: 1446,
                   // specialEvent: 'Cuma', // Uncomment for special events
                 ),
                 
-                const SizedBox(height: 24),
+                      SizedBox(height: 24),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -173,31 +233,31 @@ class HomeScreen extends StatelessWidget {
                     child: Container(
                       width: 40,
                       height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            GlobalAppStyle.accentColor,
-                            GlobalAppStyle.accentColor.withOpacity(0.7),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                            blurRadius: 12,
-                            spreadRadius: 2,
-                          ),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          GlobalAppStyle.accentColor,
+                          GlobalAppStyle.accentColor.withOpacity(0.7),
                         ],
                       ),
-                      child: const Center(
-                        child: Text(
-                          'K',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: GlobalAppStyle.accentColor.withOpacity(0.3),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'K',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                           ),
                         ),
                       ),
@@ -265,8 +325,8 @@ class HomeScreen extends StatelessWidget {
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.15),
-                        width: 1,
+                        color: Colors.white.withOpacity(0.1),
+                        width: 0.5,
                       ),
                     ),
                     child: Row(
@@ -322,17 +382,10 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          ],
+        ],
         ),
       ),
     );
   }
 
-  void _navigateToChat(BuildContext context) {
-    // Use NavigationController to switch to Chat tab instead of pushing new route
-    final navController = NavigationProvider.maybeOf(context);
-    if (navController != null) {
-      navController.goToChat();
-    }
-  }
 }

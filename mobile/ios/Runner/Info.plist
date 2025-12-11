@@ -52,5 +52,9 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Paylaşımlarınızı galeriye kaydetmek için fotoğraf kütüphanenize erişim izni gerekiyor.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Paylaşımlarınızı galeriye kaydetmek için fotoğraf kütüphanenize erişim izni gerekiyor.</string>
 </dict>
 </plist>

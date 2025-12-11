@@ -82,6 +82,12 @@ class _QuranScreenState extends State<QuranScreen> {
                         ],
                         stops: const [0.0, 0.3, 0.7, 1.0],
                       ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 0.5,
+                        ),
+                      ),
                     ),
                     child: SafeArea(
                       bottom: false,
@@ -255,8 +261,8 @@ class _QuranScreenState extends State<QuranScreen> {
           color: Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withOpacity(0.25),
-            width: 1,
+            color: Colors.white.withOpacity(0.1),
+            width: 0.5,
           ),
         ),
         child: Text(
@@ -375,8 +381,8 @@ class _QuranScreenState extends State<QuranScreen> {
               shape: BoxShape.circle,
               color: Colors.white.withOpacity(0.1),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1,
+                color: Colors.white.withOpacity(0.1),
+                width: 0.5,
               ),
             ),
             child: Center(

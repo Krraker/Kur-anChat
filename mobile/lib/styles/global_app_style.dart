@@ -7,6 +7,9 @@ export 'liquid_glass_pill.dart';
 class GlobalAppStyle {
   GlobalAppStyle._();
 
+  /// Primary font family - OggText
+  static const String fontFamily = 'OggText';
+
   /// Primary accent color - Islamic Green (deeper, more traditional)
   static const Color accentColor = Color(0xFF00A86B); // Jade/Islamic green
   
@@ -21,6 +24,106 @@ class GlobalAppStyle {
   
   /// Shadow color for depth effects
   static const Color shadowColor = Colors.black;
+  
+  /// Text styles using OggText
+  static const TextStyle displayLarge = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w300,
+    fontSize: 57,
+    letterSpacing: -0.25,
+  );
+  
+  static const TextStyle displayMedium = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w300,
+    fontSize: 45,
+  );
+  
+  static const TextStyle displaySmall = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w400,
+    fontSize: 36,
+  );
+  
+  static const TextStyle headlineLarge = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w400,
+    fontSize: 32,
+  );
+  
+  static const TextStyle headlineMedium = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w400,
+    fontSize: 28,
+  );
+  
+  static const TextStyle headlineSmall = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w500,
+    fontSize: 24,
+  );
+  
+  static const TextStyle titleLarge = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w500,
+    fontSize: 22,
+  );
+  
+  static const TextStyle titleMedium = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w500,
+    fontSize: 16,
+    letterSpacing: 0.15,
+  );
+  
+  static const TextStyle titleSmall = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w500,
+    fontSize: 14,
+    letterSpacing: 0.1,
+  );
+  
+  static const TextStyle bodyLarge = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w400,
+    fontSize: 16,
+    letterSpacing: 0.5,
+  );
+  
+  static const TextStyle bodyMedium = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w400,
+    fontSize: 14,
+    letterSpacing: 0.25,
+  );
+  
+  static const TextStyle bodySmall = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w400,
+    fontSize: 12,
+    letterSpacing: 0.4,
+  );
+  
+  static const TextStyle labelLarge = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w500,
+    fontSize: 14,
+    letterSpacing: 0.1,
+  );
+  
+  static const TextStyle labelMedium = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w500,
+    fontSize: 12,
+    letterSpacing: 0.5,
+  );
+  
+  static const TextStyle labelSmall = TextStyle(
+    fontFamily: fontFamily,
+    fontWeight: FontWeight.w500,
+    fontSize: 11,
+    letterSpacing: 0.5,
+  );
 }
 
 /// Variants for liquid glass intensity
@@ -326,8 +429,8 @@ class LiquidGlassNavigationBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(borderRadius),
                   color: Colors.white.withOpacity(0.08),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    color: Colors.white.withOpacity(0.1),
+                    width: 0.5,
                   ),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -397,8 +500,8 @@ class LiquidGlassListItem extends StatelessWidget {
                 borderRadius: BorderRadius.circular(borderRadius),
                 color: Colors.white.withOpacity(0.08),
                 border: Border.all(
-                  color: borderColor ?? Colors.white.withOpacity(0.25),
-                  width: 1.5,
+                  color: borderColor ?? Colors.white.withOpacity(0.1),
+                  width: 0.5,
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,

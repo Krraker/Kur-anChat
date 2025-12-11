@@ -67,8 +67,8 @@ class IslamicCalendarBanner extends StatelessWidget {
                 stops: const [0.0, 0.5, 1.0],
               ),
               border: Border.all(
-                color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                width: 1.5,
+                color: GlobalAppStyle.accentColor.withOpacity(0.2),
+                width: 0.5,
               ),
             ),
             child: Stack(
@@ -85,8 +85,8 @@ class IslamicCalendarBanner extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                          width: 2,
+                          color: GlobalAppStyle.accentColor.withOpacity(0.2),
+                          width: 0.5,
                         ),
                       ),
                       child: Center(

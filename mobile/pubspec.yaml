@@ -24,6 +24,12 @@ dependencies:
   
   # Storage
   shared_preferences: ^2.2.2
+  path_provider: ^2.1.2
+  
+  # Sharing & Image
+  share_plus: ^7.2.1
+  image_gallery_saver: ^2.0.3
+  permission_handler: ^11.3.0
   
   # Utils
   uuid: ^4.3.3
@@ -41,6 +47,43 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/fonts/
+    - assets/share_backgrounds/
+    - assets/PaywallAnimation/
     - assets/GettyImages-606920431.jpg
+
+  # Fonts
+  fonts:
+    - family: OggText
+      fonts:
+        - asset: assets/fonts/OggText-Light-Trial.otf
+          weight: 300
+        - asset: assets/fonts/OggText-LightItalic-Trial.otf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/OggText-Book-Trial.otf
+          weight: 400
+        - asset: assets/fonts/OggText-Italic-Trial.otf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/OggText-Medium-Trial.otf
+          weight: 500
+        - asset: assets/fonts/OggText-MediumItalic-Trial.otf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/OggText-Bold-Trial.otf
+          weight: 700
+        - asset: assets/fonts/OggText-BoldItalic-Trial.otf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/OggText-ExtraBold-Trial.otf
+          weight: 800
+        - asset: assets/fonts/OggText-ExtraBoldItalic-Trial.otf
+          weight: 800
+          style: italic
+    - family: ChiswellMedian
+      fonts:
+        - asset: assets/fonts/ChiswellMedian-Italic.otf
+          style: italic
 
 

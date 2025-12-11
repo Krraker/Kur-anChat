@@ -93,6 +93,12 @@ class _ChatScreenState extends State<ChatScreen> {
                             ],
                             stops: const [0.0, 0.3, 0.7, 1.0],
                           ),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 0.5,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -389,7 +395,7 @@ class _ChatScreenState extends State<ChatScreen> {
         color: Colors.black.withOpacity(0.75),
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
-          width: 1,
+          width: 0.5,
         ),
       ),
       child: Column(
@@ -408,8 +414,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white.withOpacity(0.1),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1,
+                    color: Colors.white.withOpacity(0.1),
+                    width: 0.5,
                   ),
                 ),
                 child: Icon(
@@ -510,8 +516,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 borderRadius: BorderRadius.circular(16),
                     color: Colors.white.withOpacity(0.15),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1.5,
+                      color: Colors.white.withOpacity(0.1),
+                      width: 0.5,
                     ),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -552,8 +558,8 @@ class _ChatScreenState extends State<ChatScreen> {
           color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1,
+            color: Colors.white.withOpacity(0.1),
+            width: 0.5,
           ),
         ),
         child: Text(
@@ -609,8 +615,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 bottomRight: Radius.circular(20),
               ),
               border: Border.all(
-                color: const Color(0xFFE5E5E5).withOpacity(0.7),
-                width: 1.5,
+                color: const Color(0xFFE5E5E5).withOpacity(0.5),
+                width: 0.5,
               ),
               boxShadow: [
                 BoxShadow(
@@ -655,8 +661,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 borderRadius: BorderRadius.circular(20),
                 color: Colors.white.withOpacity(0.08),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1.5,
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,

@@ -101,8 +101,8 @@ class _MessageBubbleState extends State<MessageBubble>
                         bottomRight: Radius.circular(4),
                       ),
                       border: Border.all(
-                        color: const Color(0xFFCDD8E4).withOpacity(0.6),
-                        width: 1.5,
+                        color: const Color(0xFFCDD8E4).withOpacity(0.4),
+                        width: 0.5,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -149,8 +149,8 @@ class _MessageBubbleState extends State<MessageBubble>
                         bottomRight: Radius.circular(20),
                       ),
                       border: Border.all(
-                        color: const Color(0xFFE5E5E5).withOpacity(0.7),
-                        width: 1.5,
+                        color: const Color(0xFFE5E5E5).withOpacity(0.5),
+                        width: 0.5,
                       ),
                       boxShadow: [
                         BoxShadow(

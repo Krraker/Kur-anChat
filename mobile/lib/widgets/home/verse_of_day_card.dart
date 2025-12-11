@@ -22,8 +22,8 @@ class VerseOfDayCard extends StatelessWidget {
             color: const Color(0xFFFFFBF0).withOpacity(0.9),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1.5,
+              color: Colors.white.withOpacity(0.1),
+              width: 0.5,
             ),
             boxShadow: [
               BoxShadow(

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../styles/styles.dart';
+import '../share_story_modal.dart';
 
 /// Sample data for daily content
 class DailyContent {
@@ -46,6 +47,7 @@ class ExpandableDailyJourneyCard extends StatefulWidget {
   final Color? accentColor;
   final Widget? expandedContent;
   final CardType cardType;
+  final Function(bool)? onExpansionChanged;
 
   const ExpandableDailyJourneyCard({
     super.key,
@@ -58,6 +60,7 @@ class ExpandableDailyJourneyCard extends StatefulWidget {
     this.accentColor,
     this.expandedContent,
     this.cardType = CardType.generic,
+    this.onExpansionChanged,
   });
 
   @override
@@ -67,13 +70,11 @@ class ExpandableDailyJourneyCard extends StatefulWidget {
 enum CardType { verse, tefsir, prayer, generic }
 
 class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard> 
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late AnimationController _glowController;
   late Animation<double> _heightAnimation;
   late Animation<double> _arrowAnimation;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _glowAnimation;
   bool _isExpanded = false;
   
   // Cached content to prevent rebuilding during animation
@@ -91,19 +92,6 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
     _controller = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
-    );
-    
-    // Slow pulsing glow animation for holy light effect
-    _glowController = AnimationController(
-      duration: const Duration(milliseconds: 3500),
-      vsync: this,
-    );
-    
-    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _glowController,
-        curve: Curves.easeInOut,
-      ),
     );
     
     _heightAnimation = CurvedAnimation(
@@ -128,7 +116,6 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
   @override
   void dispose() {
     _controller.dispose();
-    _glowController.dispose();
     super.dispose();
   }
 
@@ -139,17 +126,12 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
         _controller.forward();
-        // Start the glow animation loop for cards with background images
-        if (widget.cardType == CardType.verse || widget.cardType == CardType.tefsir) {
-          _glowController.repeat(reverse: true);
-        }
       } else {
         _controller.reverse();
-        _glowController.stop();
-        _glowController.reset();
       }
     });
     
+    widget.onExpansionChanged?.call(_isExpanded);
     widget.onTap?.call();
   }
 
@@ -258,6 +240,16 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                     blurRadius: 4,
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Share button
+            _buildShareButton(
+              ShareContent(
+                arabicText: verse['arabic'] as String,
+                turkishText: verse['meaning'] as String,
+                surahName: verse['surahTr'] as String,
+                verseNumber: 'Ayet ${verse['ayah']}',
               ),
             ),
           ],
@@ -380,6 +372,15 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Share button
+            _buildShareButton(
+              ShareContent(
+                arabicText: verse['arabic'] as String,
+                turkishText: '${verse['tafsir']}\n\n"${verse['meaning']}"',
+                surahName: 'Tefsir • ${verse['surahTr']}',
               ),
             ),
           ],
@@ -532,6 +533,16 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                             letterSpacing: 0.2,
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        // Share button for prayer
+                        _buildShareButton(
+                          ShareContent(
+                            arabicText: prayer['arabic']!,
+                            turkishText: prayer['meaning']!,
+                            surahName: 'Günün Duası',
+                          ),
+                          isDarkTheme: true,
+                        ),
                       ],
                     ),
                   ),
@@ -544,23 +555,61 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
     );
   }
 
+  Widget _buildShareButton(ShareContent content, {bool isDarkTheme = false}) {
+    return GestureDetector(
+      onTap: () {
+        ShareStoryModal.show(context, content);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDarkTheme 
+              ? Colors.red.withOpacity(0.15) 
+              : Colors.black.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDarkTheme 
+                ? Colors.red.withOpacity(0.3)
+                : Colors.white.withOpacity(0.2),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.share_rounded,
+              size: 16,
+              color: isDarkTheme 
+                  ? Colors.red.shade400
+                  : Colors.white.withOpacity(0.8),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Hikayende Paylaş',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDarkTheme 
+                    ? Colors.red.shade700
+                    : Colors.white.withOpacity(0.9),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveAccentColor = widget.accentColor ?? GlobalAppStyle.accentColor;
     
-    // Determine if this card should have the holy glow
-    final bool hasHolyGlow = widget.cardType == CardType.verse || widget.cardType == CardType.tefsir;
-    
     return GestureDetector(
       onTap: _toggleExpand,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_controller, _glowController]),
+        animation: _controller,
         builder: (context, child) {
-          // Calculate glow intensity based on expansion and glow animation
-          final glowIntensity = _isExpanded && hasHolyGlow 
-              ? _glowAnimation.value 
-              : 0.0;
-          
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
@@ -573,20 +622,6 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                   offset: const Offset(0, 8),
                   spreadRadius: -4,
                 ),
-                // Holy glow effect - tight concentrated glow when expanded
-                if (_isExpanded && hasHolyGlow)
-                  BoxShadow(
-                    color: GlobalAppStyle.accentColor.withOpacity(0.18 + (glowIntensity * 0.15)),
-                    blurRadius: 8 + (glowIntensity * 4),
-                    spreadRadius: 0 + (glowIntensity * 1),
-                  ),
-                // Secondary warm glow - tight and subtle
-                if (_isExpanded && hasHolyGlow)
-                  BoxShadow(
-                    color: const Color(0xFFFFD700).withOpacity(0.08 + (glowIntensity * 0.08)),
-                    blurRadius: 12 + (glowIntensity * 6),
-                    spreadRadius: -2,
-                  ),
               ],
             ),
             child: ClipRRect(
@@ -626,9 +661,9 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                           : Colors.white.withOpacity(0.08),
                       border: Border.all(
                         color: widget.isCompleted 
-                            ? effectiveAccentColor.withOpacity(0.4)
-                            : Colors.white.withOpacity(0.2),
-                        width: 1.5,
+                            ? effectiveAccentColor.withOpacity(0.3)
+                            : Colors.white.withOpacity(0.1),
+                        width: 0.5,
                       ),
                       gradient: (widget.cardType != CardType.verse && widget.cardType != CardType.tefsir)
                           ? LinearGradient(
@@ -667,8 +702,8 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                                   border: widget.isCompleted || widget.isLocked
                                       ? null
                                       : Border.all(
-                                          color: Colors.white.withOpacity(0.3),
-                                          width: 1.5,
+                                          color: Colors.white.withOpacity(0.15),
+                                          width: 0.5,
                                         ),
                                 ),
                                 child: Center(
@@ -831,9 +866,9 @@ class DailyJourneyCard extends StatelessWidget {
                 color: Colors.white.withOpacity(0.08),
                 border: Border.all(
                   color: isCompleted 
-                      ? effectiveAccentColor.withOpacity(0.4)
-                      : Colors.white.withOpacity(0.2),
-                  width: 1.5,
+                      ? effectiveAccentColor.withOpacity(0.3)
+                      : Colors.white.withOpacity(0.1),
+                  width: 0.5,
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -864,8 +899,8 @@ class DailyJourneyCard extends StatelessWidget {
                         border: isCompleted || isLocked
                             ? null
                             : Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1.5,
+                                color: Colors.white.withOpacity(0.15),
+                                width: 0.5,
                               ),
                       ),
                       child: Center(
@@ -1003,8 +1038,8 @@ class DailyRewardCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 color: GlobalAppStyle.accentColor.withOpacity(0.15),
                 border: Border.all(
-                  color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                  width: 1.5,
+                  color: GlobalAppStyle.accentColor.withOpacity(0.2),
+                  width: 0.5,
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,

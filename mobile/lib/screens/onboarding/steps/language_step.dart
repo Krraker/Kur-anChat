@@ -1,5 +1,5 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../../widgets/onboarding/selection_card.dart';
 
 class LanguageStep extends StatelessWidget {
   final String? selectedLanguage;
@@ -97,59 +97,75 @@ class _LanguageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected 
-              ? Colors.white.withOpacity(0.08)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected 
-                ? Colors.white.withOpacity(0.8)
-                : Colors.white.withOpacity(0.2),
-            width: isSelected ? 2 : 1,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isSelected 
+                    ? [
+                        Colors.white.withOpacity(0.15),
+                        Colors.white.withOpacity(0.08),
+                      ]
+                    : [
+                        Colors.white.withOpacity(0.08),
+                        Colors.white.withOpacity(0.04),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected 
+                    ? Colors.white.withOpacity(0.6)
+                    : Colors.white.withOpacity(0.15),
+                width: isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                // Flag
+                Text(
+                  flag,
+                  style: const TextStyle(fontSize: 28),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Language name
+                Expanded(
+                  child: Text(
+                        name,
+                        style: TextStyle(
+                      fontSize: 17,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: Colors.white.withOpacity(isSelected ? 1 : 0.9),
+                        ),
+                  ),
+                ),
+                
+                // Checkmark
+                if (isSelected)
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF00A86B),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            // Flag
-            Text(
-              flag,
-              style: const TextStyle(fontSize: 28),
-            ),
-            
-            const SizedBox(width: 16),
-            
-            // Language name
-            Expanded(
-              child: Text(
-                name,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: Colors.white.withOpacity(isSelected ? 1 : 0.9),
-                ),
-              ),
-            ),
-            
-            // Checkmark
-            if (isSelected)
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF00A86B),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-          ],
         ),
       ),
     );

@@ -4,12 +4,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'home_screen.dart';
 import 'chat_screen.dart';
 import 'quran_screen.dart';
+import 'profile_screen.dart';
+import 'community_screen.dart';
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
 
 /// Navigation controller to allow tab switching from anywhere
 class NavigationController extends ChangeNotifier {
-  int _currentIndex = 2; // Start with "Today" (Home) tab in center
+  int _currentIndex = 0; // Start with "Bugün" (Today/Home) tab on left
   
   int get currentIndex => _currentIndex;
   
@@ -20,11 +22,11 @@ class NavigationController extends ChangeNotifier {
     }
   }
   
-  void goToChat() => setTab(0);
+  void goToToday() => setTab(0);
   void goToCommunity() => setTab(1);
-  void goToToday() => setTab(2);
+  void goToChat() => setTab(2);
   void goToQuran() => setTab(3);
-  void goToExplore() => setTab(4);
+  void goToProfile() => setTab(4);
 }
 
 /// InheritedWidget to provide navigation controller to descendant widgets
@@ -73,21 +75,21 @@ class _MainNavigationState extends State<MainNavigation> {
     setState(() {});
   }
 
-  // List of screens for each tab (matching reference: Chat, Community, Today, Bible, Explore)
+  // List of screens for each tab: Bugün, Community, Chat, Quran, Profile
   List<Widget> get _screens => [
-    const ChatScreen(),
-    const PlaceholderScreen(title: 'Topluluk', icon: Icons.people_outline),
-    const HomeScreen(), // "Today" / "Günün Yolculuğu"
-    const QuranScreen(), // "Bible" equivalent -> Kuran
-    const PlaceholderScreen(title: 'Keşfet', icon: Icons.explore_outlined),
+    const HomeScreen(), // "Bugün" / "Günün Yolculuğu" - leftmost
+    const CommunityScreen(), // Community with live prayers
+    const ChatScreen(), // Chat in center
+    const QuranScreen(), // Kur'an
+    const ProfileScreen(), // Profile with Quran progress
   ];
 
-  // Navigation items matching reference app
+  // Navigation items: Bugün (left), Topluluk, Chat (center), Kur'an, Profil
   final List<_NavItem> _navItems = [
     const _NavItem(
-      label: 'Chat',
-      icon: Icons.chat_bubble_outline,
-      activeIcon: Icons.chat_bubble,
+      label: 'Bugün',
+      icon: Icons.favorite_border,
+      activeIcon: Icons.favorite,
     ),
     const _NavItem(
       label: 'Topluluk',
@@ -95,9 +97,9 @@ class _MainNavigationState extends State<MainNavigation> {
       activeIcon: Icons.people,
     ),
     const _NavItem(
-      label: 'Bugün',
-      icon: Icons.favorite_border,
-      activeIcon: Icons.favorite,
+      label: 'Chat',
+      icon: Icons.chat_bubble_outline,
+      activeIcon: Icons.chat_bubble,
       isCenter: true,
     ),
     const _NavItem(
@@ -105,9 +107,9 @@ class _MainNavigationState extends State<MainNavigation> {
       svgPath: 'assets/icons/quran_icon.svg', // Custom Quran icon
     ),
     const _NavItem(
-      label: 'Keşfet',
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
+      label: 'Profil',
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
     ),
   ];
 
@@ -260,6 +262,12 @@ class PlaceholderScreen extends StatelessWidget {
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.3, 0.7, 1.0],
+                      ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 0.5,
+                        ),
                       ),
                     ),
                   ),

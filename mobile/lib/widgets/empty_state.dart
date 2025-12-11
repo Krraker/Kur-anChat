@@ -136,8 +136,8 @@ class _EmptyStateState extends State<EmptyState> {
           color: const Color(0xFFFFFBF0).withOpacity(0.85),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.white.withOpacity(0.4),
-            width: 1.5,
+            color: Colors.white.withOpacity(0.2),
+            width: 0.5,
           ),
           boxShadow: [
             BoxShadow(

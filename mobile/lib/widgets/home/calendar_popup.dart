@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../styles/styles.dart';
 
 class CalendarPopup extends StatefulWidget {
   const CalendarPopup({super.key});
@@ -11,23 +10,24 @@ class CalendarPopup extends StatefulWidget {
       barrierDismissible: true,
       barrierLabel: 'Calendar',
       barrierColor: Colors.black.withOpacity(0.5),
-      transitionDuration: const Duration(milliseconds: 300),
+      transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (context, animation, secondaryAnimation) {
         return const CalendarPopup();
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curvedAnimation = CurvedAnimation(
+        // Glass-like reveal with eased opacity
+        final opacityAnimation = CurvedAnimation(
           parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
+          curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
         );
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, -0.1),
-            end: Offset.zero,
-          ).animate(curvedAnimation),
-          child: FadeTransition(
-            opacity: curvedAnimation,
+        final scaleAnimation = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.0, 1.0, curve: Curves.easeOutBack),
+        );
+        return FadeTransition(
+          opacity: opacityAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1.0).animate(scaleAnimation),
             child: child,
           ),
         );
@@ -78,8 +78,8 @@ class _CalendarPopupState extends State<CalendarPopup> {
                   borderRadius: BorderRadius.circular(24),
                   color: Colors.white.withOpacity(0.1),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
+                    color: Colors.white.withOpacity(0.1),
+                    width: 0.5,
                   ),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -221,15 +221,11 @@ class _CalendarPopupState extends State<CalendarPopup> {
             height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isSelected
-                  ? GlobalAppStyle.accentColor
-                  : isToday
-                      ? GlobalAppStyle.accentColor.withOpacity(0.2)
-                      : Colors.transparent,
-              border: isToday && !isSelected
+              color: Colors.transparent,
+              border: (isSelected || isToday)
                   ? Border.all(
-                      color: GlobalAppStyle.accentColor,
-                      width: 2,
+                      color: Colors.white.withOpacity(isSelected ? 0.8 : 0.3),
+                      width: isSelected ? 1 : 0.5,
                     )
                   : null,
             ),
@@ -239,11 +235,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? Colors.white
-                      : isToday
-                          ? GlobalAppStyle.accentColor
-                          : Colors.white.withOpacity(0.9),
+                  color: Colors.white.withOpacity(isSelected ? 1.0 : isToday ? 0.9 : 0.7),
                   decoration: TextDecoration.none,
                 ),
               ),
@@ -285,7 +277,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
               Icon(
                 Icons.brightness_3_rounded,
                 size: 18,
-                color: GlobalAppStyle.accentColor.withOpacity(0.8),
+                color: Colors.white.withOpacity(0.6),
               ),
               const SizedBox(width: 8),
               Text(
@@ -310,10 +302,11 @@ class _CalendarPopupState extends State<CalendarPopup> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: GlobalAppStyle.accentColor.withOpacity(0.2),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: GlobalAppStyle.accentColor.withOpacity(0.4),
+                  color: Colors.white.withOpacity(0.3),
+                  width: 0.5,
                 ),
               ),
               child: Text(
@@ -321,7 +314,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: GlobalAppStyle.accentColor,
+                  color: Colors.white.withOpacity(0.9),
                   decoration: TextDecoration.none,
                 ),
               ),
