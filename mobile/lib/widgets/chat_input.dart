@@ -73,7 +73,9 @@ class _ChatInputState extends State<ChatInput> {
                   child: TextField(
                     controller: _controller,
                     maxLines: null,
-                    textCapitalization: TextCapitalization.sentences,
+                    textCapitalization: TextCapitalization.none,
+                    autocorrect: false,
+                    enableSuggestions: false,
                     decoration: const InputDecoration(
                       hintText: 'Kur\'an hakkında bir soru sorun...',
                       hintStyle: TextStyle(

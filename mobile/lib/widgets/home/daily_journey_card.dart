@@ -5,16 +5,73 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../styles/styles.dart';
 import '../share_story_modal.dart';
 
-/// Sample data for daily content
+/// Daily content with rotation based on day of year
 class DailyContent {
-  static const Map<String, dynamic> verseOfDay = {
-    'surah': 'Al-Baqarah',
-    'surahTr': 'Bakara Suresi',
-    'ayah': 286,
-    'arabic': 'لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا',
-    'meaning': 'Allah hiç kimseye gücünün üstünde bir yük yüklemez.',
-    'tafsir': 'Bu ayet, Allah\'ın kullarına karşı merhametini ve adaletini gösterir.',
-  };
+  // Verses collection - rotates daily
+  static const List<Map<String, dynamic>> _verses = [
+    {
+      'surah': 'Al-Baqarah',
+      'surahTr': 'Bakara Suresi',
+      'ayah': 286,
+      'arabic': 'لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا',
+      'meaning': 'Allah hiç kimseye gücünün üstünde bir yük yüklemez.',
+      'tafsir': 'Bu ayet, Allah\'ın kullarına karşı merhametini ve adaletini gösterir.',
+    },
+    {
+      'surah': 'Al-Inshirah',
+      'surahTr': 'İnşirâh Suresi',
+      'ayah': 5,
+      'arabic': 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا',
+      'meaning': 'Demek ki, zorlukla beraber kolaylık vardır.',
+      'tafsir': 'Her zorluktan sonra bir kolaylık gelir. Allah kullarını asla yalnız bırakmaz.',
+    },
+    {
+      'surah': 'Ar-Rad',
+      'surahTr': 'Ra\'d Suresi',
+      'ayah': 28,
+      'arabic': 'أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ',
+      'meaning': 'Biliniz ki, kalpler ancak Allah\'ı anmakla huzur bulur.',
+      'tafsir': 'Kalplerin gerçek huzuru ancak Allah\'ı zikretmekle mümkündür.',
+    },
+    {
+      'surah': 'Al-Baqarah',
+      'surahTr': 'Bakara Suresi',
+      'ayah': 153,
+      'arabic': 'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',
+      'meaning': 'Şüphesiz Allah sabredenlerle beraberdir.',
+      'tafsir': 'Sabır, müminin en güçlü silahıdır ve Allah sabredenlere yardım eder.',
+    },
+    {
+      'surah': 'Al-Baqarah',
+      'surahTr': 'Bakara Suresi',
+      'ayah': 186,
+      'arabic': 'أُجِيبُ دَعْوَةَ الدَّاعِ إِذَا دَعَانِ',
+      'meaning': 'Bana dua edince, dua edenin duasına karşılık veririm.',
+      'tafsir': 'Allah kullarına çok yakındır ve dualarını kabul eder.',
+    },
+    {
+      'surah': 'Al-Ankabut',
+      'surahTr': 'Ankebût Suresi',
+      'ayah': 45,
+      'arabic': 'إِنَّ الصَّلَاةَ تَنْهَىٰ عَنِ الْفَحْشَاءِ وَالْمُنكَرِ',
+      'meaning': 'Şüphesiz namaz, insanı çirkin işlerden ve kötülükten alıkoyar.',
+      'tafsir': 'Namaz, insanı kötülüklerden koruyan manevi bir kalkan gibidir.',
+    },
+    {
+      'surah': 'Az-Zumar',
+      'surahTr': 'Zümer Suresi',
+      'ayah': 53,
+      'arabic': 'لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ ۚ إِنَّ اللَّهَ يَغْفِرُ الذُّنُوبَ جَمِيعًا',
+      'meaning': 'Allah\'ın rahmetinden ümit kesmeyin. Çünkü Allah bütün günahları bağışlar.',
+      'tafsir': 'Allah\'ın rahmeti sonsuzdur ve tövbe edenleri bağışlar.',
+    },
+  ];
+
+  // Get verse of the day (rotates based on day of year)
+  static Map<String, dynamic> get verseOfDay {
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    return _verses[dayOfYear % _verses.length];
+  }
 
   static const List<Map<String, String>> prayers = [
     {
@@ -29,10 +86,36 @@ class DailyContent {
       'arabic': 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا',
       'meaning': 'Rabbimiz! Bizi doğru yola ilettikten sonra kalplerimizi eğriltme.',
     },
+    {
+      'arabic': 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',
+      'meaning': 'Allah bize yeter. O ne güzel vekildir!',
+    },
+    {
+      'arabic': 'رَبِّ زِدْنِي عِلْمًا',
+      'meaning': 'Rabbim! İlmimi artır.',
+    },
+    {
+      'arabic': 'لَّا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ الظَّالِمِينَ',
+      'meaning': 'Senden başka ilâh yoktur. Seni tenzih ederim. Gerçekten ben zalimlerden oldum.',
+    },
+    {
+      'arabic': 'رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِن ذُرِّيَّتِي',
+      'meaning': 'Rabbim! Beni ve soyumdan gelecekleri namazı dosdoğru kılanlardan eyle.',
+    },
+    {
+      'arabic': 'رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ',
+      'meaning': 'Rabbimiz! Bize eşlerimizden ve çocuklarımızdan göz aydınlığı olacak kimseler bağışla.',
+    },
   ];
 
   static Map<String, String> getRandomPrayer() {
     return prayers[Random().nextInt(prayers.length)];
+  }
+  
+  // Get prayer of the day (rotates based on day of year)
+  static Map<String, String> get prayerOfDay {
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    return prayers[dayOfYear % prayers.length];
   }
 }
 
@@ -184,7 +267,7 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
               ),
               child: Text(
                 '${verse['surahTr']} • Ayet ${verse['ayah']}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: GlobalAppStyle.accentColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -295,7 +378,7 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.auto_stories_rounded,
                     size: 12,
                     color: GlobalAppStyle.accentColor,
@@ -303,7 +386,7 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                   const SizedBox(width: 5),
                   Text(
                     'Tefsir • ${verse['surahTr']}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: GlobalAppStyle.accentColor,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

@@ -319,14 +319,14 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
-        tabs: [
+        tabs: const [
           Tab(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.favorite_border, size: 18),
-                const SizedBox(width: 6),
-                const Text('Canlı Dualar'),
+                SizedBox(width: 6),
+                Text('Canlı Dualar'),
               ],
             ),
           ),
@@ -335,8 +335,8 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.public, size: 18),
-                const SizedBox(width: 6),
-                const Text('Dünya Olayları'),
+                SizedBox(width: 6),
+                Text('Dünya Olayları'),
               ],
             ),
           ),
@@ -855,6 +855,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                                 ),
                                 child: TextField(
                                   maxLines: null,
+                                  autocorrect: false,
+                                  enableSuggestions: false,
+                                  textCapitalization: TextCapitalization.none,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 15,
@@ -1624,7 +1627,7 @@ class _LivePrayerRoomDialogState extends State<_LivePrayerRoomDialog> with Ticke
           const SizedBox(width: 10),
           Text(
             _formatNumber(_aminCount),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: _monoColor,
@@ -1881,7 +1884,7 @@ class _LivePrayerRoomDialogState extends State<_LivePrayerRoomDialog> with Ticke
                       return LinearGradient(
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
-                        colors: [
+                        colors: const [
                           _monoColor,
                           _monoColor,
                           Colors.transparent,
@@ -1899,7 +1902,7 @@ class _LivePrayerRoomDialogState extends State<_LivePrayerRoomDialog> with Ticke
                     child: Text(
                       lineText,
                       textAlign: TextAlign.left,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         height: 1.5,
                         color: _monoColor,
@@ -2209,3 +2212,4 @@ class _SacredGeometryPainter extends CustomPainter {
     return oldDelegate.ringCount != ringCount || oldDelegate.positions.length != positions.length;
   }
 }
+

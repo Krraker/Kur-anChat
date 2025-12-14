@@ -702,7 +702,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         fontSize: 15,
                       ),
                       maxLines: 1,
-                      textCapitalization: TextCapitalization.sentences,
+                      textCapitalization: TextCapitalization.none,
+                      autocorrect: false,
+                      enableSuggestions: false,
                       onSubmitted: (text) {
                         if (text.trim().isNotEmpty) {
                           chatProvider.sendMessage(text);

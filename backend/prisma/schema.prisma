@@ -20,14 +20,69 @@ model QuranVerse {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  tafsirs   Tafsir[]
+
   @@unique([surah, ayah])
   @@index([surah])
   @@map("quran_verses")
 }
 
+model Tafsir {
+  id        Int      @id @default(autoincrement())
+  surah     Int
+  ayah      Int
+  source    String   // "Ibn Kesir", "Diyanet", "Taberi" etc.
+  text      String   @db.Text
+  verse     QuranVerse? @relation(fields: [surah, ayah], references: [surah, ayah])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([surah, ayah, source])
+  @@index([surah, ayah])
+  @@map("tafsirs")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  deviceId        String?  @unique @map("device_id")
+  email           String?  @unique
+  name            String?
+  language        String   @default("tr")
+  selectedMezhep  String?  @map("selected_mezhep")
+  translation     String   @default("diyanet")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  progress        UserProgress?
+
+  @@map("users")
+}
+
+model UserProgress {
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  lastReadSurah   Int      @default(1) @map("last_read_surah")
+  lastReadAyah    Int      @default(1) @map("last_read_ayah")
+  completedSurahs Int[]    @default([]) @map("completed_surahs")
+  
+  level           Int      @default(1)
+  xp              Int      @default(0)
+  streak          Int      @default(0)
+  lastActiveDate  DateTime @default(now()) @map("last_active_date")
+  
+  totalVersesRead Int      @default(0) @map("total_verses_read")
+  totalTimeSpent  Int      @default(0) @map("total_time_spent") // in minutes
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("user_progress")
+}
+
 model Conversation {
   id        String    @id @default(uuid())
-  userId    String    @map("user_id") // User identifier (can be session-based or auth-based)
+  userId    String    @map("user_id") // User identifier (can be anonymous)
   title     String?   // Auto-generated or user-defined title
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")

@@ -1,13 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 396.55 237.93">
-  <!-- Generator: Adobe Illustrator 30.0.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 123)  -->
-  <defs>
-    <style>
-      .st0 {
-        fill: #ffdc00;
-        opacity: .4;
-      }
-    </style>
-  </defs>
-  <circle class="st0" cx="198.28" cy="120.61" r="190.38"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 396.55 404.6">
+  <circle fill="#FFDC00" fill-opacity="0.4" cx="198.28" cy="202.3" r="190.38"/>
 </svg>

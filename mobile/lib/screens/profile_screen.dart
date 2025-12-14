@@ -298,15 +298,15 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(
                         Icons.auto_awesome,
                         size: 18,
                         color: GlobalAppStyle.accentColor,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'TECRÜBE PUANI',
                         style: TextStyle(
                           fontSize: 11,
@@ -319,7 +319,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   ),
                   Text(
                     '${_userData['xp']} / ${_userData['xpToNextLevel']} XP',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: GlobalAppStyle.accentColor,
@@ -546,7 +546,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 ),
                 child: Text(
                   '${_userData['completedJuz']}/30 Cüz',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: GlobalAppStyle.accentColor,
@@ -589,7 +589,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         Center(
           child: TextButton(
             onPressed: () {},
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -600,7 +600,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     color: GlobalAppStyle.accentColor,
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 12,

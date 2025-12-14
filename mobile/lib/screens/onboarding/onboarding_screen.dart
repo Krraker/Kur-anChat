@@ -3,8 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/app_gradient_background.dart';
 import '../../widgets/onboarding/onboarding_progress_bar.dart';
 import '../../widgets/onboarding/continue_button.dart';
-import '../../widgets/onboarding/selection_card.dart';
-import '../../styles/styles.dart';
 import '../main_navigation.dart';
 import 'steps/language_step.dart';
 import 'steps/age_step.dart';

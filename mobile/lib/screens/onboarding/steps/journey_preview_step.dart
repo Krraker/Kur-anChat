@@ -21,7 +21,7 @@ class JourneyPreviewStep extends StatelessWidget {
             'assets/icons/allah_icon.svg',
             width: 120,
             height: 120,
-            colorFilter: ColorFilter.mode(
+            colorFilter: const ColorFilter.mode(
               GlobalAppStyle.accentColor,
               BlendMode.srcIn,
             ),

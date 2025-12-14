@@ -92,7 +92,7 @@ class AnimatedProgressBar extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(3),
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: [
                         GlobalAppStyle.accentColor,
                         GlobalAppStyle.accentColorLight,
