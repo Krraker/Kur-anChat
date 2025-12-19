@@ -289,3 +289,4 @@ class UserProgress {
     return 'Müfessir';
   }
 }
+

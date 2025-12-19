@@ -75,3 +75,4 @@ class DailyContentProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+

@@ -147,3 +147,4 @@ export class TafsirController {
     return 'Bu ayet, Kur\'an-ı Kerim\'in derin hikmetlerinden birini içermektedir. Detaylı tefsir için İslam alimlerinin eserlerine başvurabilirsiniz.';
   }
 }
+

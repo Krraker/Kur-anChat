@@ -92,8 +92,15 @@ class _MessageBubbleState extends State<MessageBubble>
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     decoration: BoxDecoration(
-                      // Soft blue-gray for user messages
-                      color: const Color(0xFFE8EEF4).withOpacity(0.9),
+                      // Warm yellowish cream gradient for clear contrast
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFFFFF8E7).withOpacity(0.98), // Light warm yellow at top
+                          const Color(0xFFE8D5B5).withOpacity(0.98), // Warm golden cream at bottom
+                        ],
+                      ),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -101,12 +108,12 @@ class _MessageBubbleState extends State<MessageBubble>
                         bottomRight: Radius.circular(4),
                       ),
                       border: Border.all(
-                        color: const Color(0xFFCDD8E4).withOpacity(0.4),
+                        color: const Color(0xFFD4B896).withOpacity(0.6),
                         width: 0.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: const Color(0xFFB8956B).withOpacity(0.15),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -178,7 +185,7 @@ class _MessageBubbleState extends State<MessageBubble>
     return Text(
       content.text,
       style: const TextStyle(
-        color: Color(0xFF2D3748), // Dark gray-blue for user text
+        color: Colors.black, // Pure black text
         fontSize: 15,
         height: 1.5,
       ),

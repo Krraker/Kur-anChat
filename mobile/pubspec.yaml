@@ -50,6 +50,7 @@ flutter:
     - assets/fonts/
     - assets/share_backgrounds/
     - assets/PaywallAnimation/
+    - assets/achievements/
     - assets/GettyImages-606920431.jpg
 
   # Fonts

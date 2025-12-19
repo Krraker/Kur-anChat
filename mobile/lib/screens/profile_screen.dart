@@ -724,14 +724,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   Widget _buildAchievementsSection() {
+    // Achievement cards with image assets
     final achievements = [
-      {'icon': Icons.wb_sunny, 'name': 'İlk Gün', 'unlocked': true},
-      {'icon': Icons.local_fire_department, 'name': '7 Gün Serisi', 'unlocked': true},
-      {'icon': Icons.menu_book, 'name': 'İlk Sure', 'unlocked': true},
-      {'icon': Icons.star, 'name': '100 Ayet', 'unlocked': true},
-      {'icon': Icons.diamond, 'name': '1000 Ayet', 'unlocked': false},
-      {'icon': Icons.rocket_launch, 'name': '30 Gün', 'unlocked': false},
+      {'image': 'assets/achievements/day_1.png', 'name': 'İlk Gün', 'unlocked': true, 'description': 'İlk günü tamamla'},
+      {'image': 'assets/achievements/day_7.png', 'name': '7. Gün', 'unlocked': true, 'description': '7 gün üst üste giriş yap'},
+      {'image': 'assets/achievements/day_30.png', 'name': '30. Gün', 'unlocked': false, 'description': '30 gün üst üste giriş yap'},
+      {'image': 'assets/achievements/verse_100.png', 'name': '100 Ayet', 'unlocked': true, 'description': '100 ayet oku'},
+      {'image': 'assets/achievements/verse_1000.png', 'name': '1000 Ayet', 'unlocked': false, 'description': '1000 ayet oku'},
     ];
+
+    final unlockedCount = achievements.where((a) => a['unlocked'] == true).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -764,7 +766,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 ],
               ),
               Text(
-                '${_userData['achievements']} / ${achievements.length}',
+                '$unlockedCount / ${achievements.length}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -775,19 +777,20 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
         ),
         
-        // Achievements grid
+        // Achievements horizontal scroll with images
         SizedBox(
-          height: 90,
+          height: 140,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: achievements.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final achievement = achievements[index];
               return _buildAchievementCard(
-                achievement['icon'] as IconData,
+                achievement['image'] as String,
                 achievement['name'] as String,
                 achievement['unlocked'] as bool,
+                achievement['description'] as String,
               );
             },
           ),
@@ -796,51 +799,219 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildAchievementCard(IconData icon, String name, bool unlocked) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          width: 75,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            color: unlocked 
-                ? Colors.amber.withOpacity(0.1)
-                : Colors.white.withOpacity(0.04),
-            border: Border.all(
-              color: unlocked 
-                  ? Colors.amber.withOpacity(0.2)
-                  : Colors.white.withOpacity(0.1),
-              width: 0.5,
+  Widget _buildAchievementCard(String imagePath, String name, bool unlocked, String description) {
+    return GestureDetector(
+      onTap: () {
+        // Show achievement details
+        _showAchievementDetails(imagePath, name, unlocked, description);
+      },
+      child: Container(
+        width: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: unlocked ? [
+            BoxShadow(
+              color: Colors.amber.withOpacity(0.2),
+              blurRadius: 12,
+              spreadRadius: 1,
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 26,
-                color: unlocked 
-                    ? Colors.amber.shade400
-                    : Colors.white.withOpacity(0.3),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                name,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: unlocked 
-                      ? Colors.white.withOpacity(0.9)
-                      : Colors.white.withOpacity(0.3),
+          ] : null,
+        ),
+        child: Stack(
+          children: [
+            // Achievement card image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: ColorFiltered(
+                colorFilter: unlocked 
+                    ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                    : ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.darken),
+                child: Image.asset(
+                  imagePath,
+                  width: 100,
+                  height: 140,
+                  fit: BoxFit.cover,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
+            ),
+            // Locked overlay
+            if (!unlocked)
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.black.withOpacity(0.3),
+                      ),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.lock,
+                            color: Colors.white54,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            // Border decoration
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: unlocked 
+                        ? Colors.amber.withOpacity(0.4)
+                        : Colors.white.withOpacity(0.1),
+                    width: unlocked ? 1.5 : 0.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAchievementDetails(String imagePath, String name, bool unlocked, String description) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                color: Colors.black.withOpacity(0.7),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Achievement image
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: unlocked ? [
+                        BoxShadow(
+                          color: Colors.amber.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ] : null,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: ColorFiltered(
+                        colorFilter: unlocked 
+                            ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                            : ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.darken),
+                        child: Image.asset(
+                          imagePath,
+                          width: 180,
+                          height: 250,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Achievement name
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: unlocked ? Colors.amber.shade300 : Colors.white70,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Description
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Status
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: unlocked 
+                          ? Colors.green.withOpacity(0.2)
+                          : Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: unlocked 
+                            ? Colors.green.withOpacity(0.3)
+                            : Colors.white.withOpacity(0.1),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          unlocked ? Icons.check_circle : Icons.lock_outline,
+                          size: 18,
+                          color: unlocked ? Colors.green : Colors.white54,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          unlocked ? 'Kazanıldı!' : 'Kilitli',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: unlocked ? Colors.green : Colors.white54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Close button
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Kapat',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

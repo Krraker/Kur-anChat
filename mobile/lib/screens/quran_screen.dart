@@ -1,9 +1,12 @@
 import 'dart:ui';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
+import '../services/api_config.dart';
 
-/// Quran reading screen - placeholder implementation
+/// Quran reading screen - with API integration
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
 
@@ -15,45 +18,57 @@ class _QuranScreenState extends State<QuranScreen> {
   String selectedSurah = 'Fatiha';
   int selectedSurahNumber = 1;
   String selectedTranslation = 'Diyanet';
+  
+  List<Map<String, dynamic>> _verses = [];
+  bool _isLoading = true;
+  String? _error;
 
-  // Sample verses for placeholder
-  static const List<Map<String, dynamic>> sampleVerses = [
-    {
-      'number': 1,
-      'arabic': 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-      'translation': 'Rahmân ve Rahîm olan Allah\'ın adıyla.',
-    },
-    {
-      'number': 2,
-      'arabic': 'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
-      'translation': 'Hamd, âlemlerin Rabbi Allah\'a mahsustur.',
-    },
-    {
-      'number': 3,
-      'arabic': 'الرَّحْمَٰنِ الرَّحِيمِ',
-      'translation': 'Rahmân ve Rahîm\'dir O.',
-    },
-    {
-      'number': 4,
-      'arabic': 'مَالِكِ يَوْمِ الدِّينِ',
-      'translation': 'Din gününün tek sahibidir.',
-    },
-    {
-      'number': 5,
-      'arabic': 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
-      'translation': 'Ancak sana kulluk eder ve ancak senden yardım dileriz.',
-    },
-    {
-      'number': 6,
-      'arabic': 'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ',
-      'translation': 'Bizi dosdoğru yola ilet.',
-    },
-    {
-      'number': 7,
-      'arabic': 'صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ',
-      'translation': 'Kendilerine nimet verdiklerinin yoluna; gazaba uğrayanların ve sapıkların yoluna değil.',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadSurah(1);
+  }
+
+  Future<void> _loadSurah(int surahNumber) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final config = ApiConfig();
+      final response = await http.get(
+        Uri.parse('${config.baseUrl}/quran/surah/$surahNumber'),
+        headers: config.headers,
+      ).timeout(config.timeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final verses = (data['verses'] as List).map((v) => {
+          'number': v['ayah'] ?? 0,
+          'arabic': v['arabic'] ?? v['text_ar'] ?? '',
+          'translation': v['turkish'] ?? v['text_tr'] ?? '',
+        }).toList();
+
+        setState(() {
+          _verses = List<Map<String, dynamic>>.from(verses);
+          selectedSurahNumber = surahNumber;
+          selectedSurah = data['name'] ?? _getSurahName(surahNumber);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Sureler yüklenemedi';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Bağlantı hatası: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,18 +213,49 @@ class _QuranScreenState extends State<QuranScreen> {
               
               // Verses list
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    bottom: 200,
-                  ),
-                  itemCount: sampleVerses.length,
-                  itemBuilder: (context, index) {
-                    final verse = sampleVerses[index];
-                    return _buildVerseItem(verse);
-                  },
-                ),
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: GlobalAppStyle.accentColor,
+                        ),
+                      )
+                    : _error != null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.white.withOpacity(0.5),
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _error!,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () => _loadSurah(selectedSurahNumber),
+                                  child: const Text('Tekrar Dene'),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(
+                              left: 16,
+                              right: 16,
+                              bottom: 200,
+                            ),
+                            itemCount: _verses.length,
+                            itemBuilder: (context, index) {
+                              final verse = _verses[index];
+                              return _buildVerseItem(verse);
+                            },
+                          ),
               ),
             ],
           ),
@@ -224,23 +270,29 @@ class _QuranScreenState extends State<QuranScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Previous button
+                  // Previous surah button
                   _buildNavButton(
                     Icons.chevron_left,
-                    onTap: () {},
+                    onTap: selectedSurahNumber > 1
+                        ? () => _loadSurah(selectedSurahNumber - 1)
+                        : null,
                   ),
                   
                   // Play/Audio button
                   _buildNavButton(
                     Icons.play_arrow,
                     isCenter: true,
-                    onTap: () {},
+                    onTap: () {
+                      // TODO: Audio playback
+                    },
                   ),
                   
-                  // Next button
+                  // Next surah button
                   _buildNavButton(
                     Icons.chevron_right,
-                    onTap: () {},
+                    onTap: selectedSurahNumber < 114
+                        ? () => _loadSurah(selectedSurahNumber + 1)
+                        : null,
                   ),
                 ],
               ),
@@ -319,7 +371,7 @@ class _QuranScreenState extends State<QuranScreen> {
               // Arabic text (right-to-left, right-aligned)
               Expanded(
                 child: Text(
-                  verse['arabic'] as String,
+                  (verse['arabic'] ?? '').toString(),
                   textAlign: TextAlign.right,
                   textDirection: TextDirection.rtl,
                   style: TextStyle(
@@ -345,7 +397,7 @@ class _QuranScreenState extends State<QuranScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 8),
             child: Text(
-              verse['translation'] as String,
+              (verse['translation'] ?? '').toString(),
               textAlign: TextAlign.left,
               style: TextStyle(
                 fontSize: 14,
@@ -368,28 +420,54 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Widget _buildNavButton(IconData icon, {bool isCenter = false, VoidCallback? onTap}) {
+    final size = isCenter ? 56.0 : 48.0;
+    final iconSize = isCenter ? 28.0 : 22.0;
+    
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(isCenter ? 28 : 24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            width: isCenter ? 56 : 48,
-            height: isCenter ? 56 : 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.1),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 0.5,
-              ),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
             ),
-            child: Center(
-              child: Icon(
-                icon,
-                color: Colors.white.withOpacity(0.9),
-                size: isCenter ? 28 : 22,
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(size / 2),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.08),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.18),
+                    Colors.white.withOpacity(0.06),
+                    Colors.white.withOpacity(0.02),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: Colors.white.withOpacity(0.9),
+                  size: iconSize,
+                ),
               ),
             ),
           ),
@@ -399,69 +477,115 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   void _showSurahSelector() {
-    // TODO: Implement surah selector bottom sheet
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: 400,
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
+      isScrollControlled: true,
+      builder: (context) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 0.5,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withOpacity(0.12),
+                  Colors.white.withOpacity(0.05),
+                ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Sure Seçin',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: 114,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: GlobalAppStyle.accentColor.withOpacity(0.2),
-                      child: Text(
-                        '${index + 1}',
-                        style: const TextStyle(
-                          color: GlobalAppStyle.accentColor,
-                          fontWeight: FontWeight.bold,
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Sure Seçin',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: 114,
+                    itemBuilder: (context, index) {
+                      final isSelected = selectedSurahNumber == index + 1;
+                      return ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? GlobalAppStyle.accentColor.withOpacity(0.3)
+                                : Colors.white.withOpacity(0.1),
+                            border: isSelected
+                                ? Border.all(
+                                    color: GlobalAppStyle.accentColor,
+                                    width: 1,
+                                  )
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                color: isSelected
+                                    ? GlobalAppStyle.accentColor
+                                    : Colors.white.withOpacity(0.7),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    title: Text(
-                      _getSurahName(index + 1),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        selectedSurahNumber = index + 1;
-                        selectedSurah = _getSurahName(index + 1);
-                      });
-                      Navigator.pop(context);
+                        title: Text(
+                          _getSurahName(index + 1),
+                          style: TextStyle(
+                            color: isSelected
+                                ? GlobalAppStyle.accentColor
+                                : Colors.white,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(
+                                Icons.check_circle,
+                                color: GlobalAppStyle.accentColor,
+                                size: 20,
+                              )
+                            : null,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _loadSurah(index + 1);
+                        },
+                      );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -477,7 +601,25 @@ class _QuranScreenState extends State<QuranScreen> {
       'En\'am', 'A\'raf', 'Enfal', 'Tevbe', 'Yunus',
       'Hud', 'Yusuf', 'Ra\'d', 'İbrahim', 'Hicr',
       'Nahl', 'İsra', 'Kehf', 'Meryem', 'Taha',
-      // ... simplified for placeholder
+      'Enbiya', 'Hac', 'Mü\'minun', 'Nur', 'Furkan',
+      'Şuara', 'Neml', 'Kasas', 'Ankebut', 'Rum',
+      'Lokman', 'Secde', 'Ahzab', 'Sebe', 'Fatır',
+      'Yasin', 'Saffat', 'Sad', 'Zümer', 'Mü\'min',
+      'Fussilet', 'Şura', 'Zuhruf', 'Duhan', 'Casiye',
+      'Ahkaf', 'Muhammed', 'Fetih', 'Hucurat', 'Kaf',
+      'Zariyat', 'Tur', 'Necm', 'Kamer', 'Rahman',
+      'Vakıa', 'Hadid', 'Mücadele', 'Haşr', 'Mümtehine',
+      'Saf', 'Cum\'a', 'Münafikun', 'Teğabün', 'Talak',
+      'Tahrim', 'Mülk', 'Kalem', 'Hakka', 'Mearic',
+      'Nuh', 'Cin', 'Müzzemmil', 'Müddessir', 'Kıyamet',
+      'İnsan', 'Mürselat', 'Nebe', 'Naziat', 'Abese',
+      'Tekvir', 'İnfitar', 'Mutaffifin', 'İnşikak', 'Büruc',
+      'Tarık', 'A\'la', 'Ğaşiye', 'Fecr', 'Beled',
+      'Şems', 'Leyl', 'Duha', 'İnşirah', 'Tin',
+      'Alak', 'Kadr', 'Beyyine', 'Zilzal', 'Adiyat',
+      'Karia', 'Tekasür', 'Asr', 'Hümeze', 'Fil',
+      'Kureyş', 'Maun', 'Kevser', 'Kafirun', 'Nasr',
+      'Tebbet', 'İhlas', 'Felak', 'Nas',
     ];
     if (number <= surahNames.length) {
       return surahNames[number - 1];
