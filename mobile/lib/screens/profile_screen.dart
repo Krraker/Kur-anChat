@@ -779,11 +779,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         
         // Achievements horizontal scroll with images
         SizedBox(
-          height: 140,
+          height: 180,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: achievements.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
             itemBuilder: (context, index) {
               final achievement = achievements[index];
               return _buildAchievementCard(
@@ -805,79 +805,49 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         // Show achievement details
         _showAchievementDetails(imagePath, name, unlocked, description);
       },
-      child: Container(
-        width: 100,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: unlocked ? [
-            BoxShadow(
-              color: Colors.amber.withOpacity(0.2),
-              blurRadius: 12,
-              spreadRadius: 1,
-            ),
-          ] : null,
-        ),
+      child: SizedBox(
+        width: 130,
+        height: 180,
         child: Stack(
           children: [
-            // Achievement card image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: ColorFiltered(
-                colorFilter: unlocked 
-                    ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                    : ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.darken),
-                child: Image.asset(
-                  imagePath,
-                  width: 100,
-                  height: 140,
-                  fit: BoxFit.cover,
-                ),
+            // Card image
+            ColorFiltered(
+              colorFilter: unlocked 
+                  ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                  : const ColorFilter.matrix(<double>[
+                      0.2126, 0.7152, 0.0722, 0, 0,
+                      0.2126, 0.7152, 0.0722, 0, 0,
+                      0.2126, 0.7152, 0.0722, 0, 0,
+                      0, 0, 0, 0.5, 0,
+                    ]),
+              child: Image.asset(
+                imagePath,
+                width: 130,
+                height: 180,
+                fit: BoxFit.contain,
               ),
             ),
-            // Locked overlay
+            // Lock icon for locked cards - bottom center
             if (!unlocked)
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        color: Colors.black.withOpacity(0.3),
-                      ),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.lock,
-                            color: Colors.white54,
-                            size: 24,
-                          ),
-                        ),
-                      ),
+              Positioned(
+                bottom: 25,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.lock,
+                      color: Colors.white70,
+                      size: 20,
                     ),
                   ),
                 ),
               ),
-            // Border decoration
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: unlocked 
-                        ? Colors.amber.withOpacity(0.4)
-                        : Colors.white.withOpacity(0.1),
-                    width: unlocked ? 1.5 : 0.5,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -885,136 +855,122 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _showAchievementDetails(String imagePath, String name, bool unlocked, String description) {
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+      barrierDismissible: true,
+      barrierLabel: 'Achievement',
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Material(
+              color: Colors.transparent,
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
-                color: Colors.black.withOpacity(0.7),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 0.5,
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Achievement image
-                  Container(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: unlocked ? [
-                        BoxShadow(
-                          color: Colors.amber.withOpacity(0.3),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        ),
-                      ] : null,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: ColorFiltered(
-                        colorFilter: unlocked 
-                            ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                            : ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.darken),
-                        child: Image.asset(
-                          imagePath,
-                          width: 180,
-                          height: 250,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Achievement name
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: unlocked ? Colors.amber.shade300 : Colors.white70,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Description
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Status
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: unlocked 
-                          ? Colors.green.withOpacity(0.2)
-                          : Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(24),
+                      color: Colors.white.withOpacity(0.1),
                       border: Border.all(
-                        color: unlocked 
-                            ? Colors.green.withOpacity(0.3)
-                            : Colors.white.withOpacity(0.1),
+                        color: Colors.white.withOpacity(0.1),
                         width: 0.5,
                       ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.15),
+                          Colors.white.withOpacity(0.05),
+                        ],
+                      ),
                     ),
-                    child: Row(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          unlocked ? Icons.check_circle : Icons.lock_outline,
-                          size: 18,
-                          color: unlocked ? Colors.green : Colors.white54,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          unlocked ? 'Kazanıldı!' : 'Kilitli',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: unlocked ? Colors.green : Colors.white54,
+                        // Big achievement card image - no container
+                        ColorFiltered(
+                          colorFilter: unlocked 
+                              ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                              : const ColorFilter.matrix(<double>[
+                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                  0, 0, 0, 0.5, 0,
+                                ]),
+                          child: Image.asset(
+                            imagePath,
+                            width: 300,
+                            height: 420,
+                            fit: BoxFit.contain,
                           ),
+                        ),
+                        
+                        const SizedBox(height: 12),
+                        
+                        // Tiny details underneath
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        
+                        const SizedBox(height: 6),
+                        
+                        // Status - very small
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              unlocked ? Icons.check_circle : Icons.lock_outline,
+                              size: 12,
+                              color: unlocked ? Colors.green.shade400 : Colors.white38,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              unlocked ? 'Kazanıldı' : 'Kilitli',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: unlocked ? Colors.green.shade400 : Colors.white38,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Close button
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Kapat',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        // Glass-like reveal with eased opacity - same as calendar
+        final opacityAnimation = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+        );
+        final scaleAnimation = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.0, 1.0, curve: Curves.easeOutBack),
+        );
+        return FadeTransition(
+          opacity: opacityAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1.0).animate(scaleAnimation),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
