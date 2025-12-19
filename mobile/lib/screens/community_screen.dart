@@ -56,8 +56,15 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _startTimer();
     _startOnlineUsersAnimation();
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      setState(() {});
+    }
   }
 
   void _startTimer() {
@@ -135,6 +142,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _timer?.cancel();
     _onlineUsersTimer?.cancel();
@@ -143,29 +151,77 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
+    // Content padding - same logic as Quran page (headerHeight + chips area)
+    final contentTopPadding = MediaQuery.of(context).padding.top + 72 + 48;
+    
     return AppGradientBackground(
       child: Stack(
         children: [
-          // Main content
-          Column(
+          // Tab content - FIRST in stack, NO wrapper padding
+          // Content scrolls from top:0, internal padding pushes it below header
+          TabBarView(
+            controller: _tabController,
             children: [
-              // Header
-              _buildHeader(),
-              
-              // Tab bar
-              _buildTabBar(),
-              
-              // Tab content
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildLivePrayersTab(),
-                    _buildWorldEventsTab(),
-                  ],
+              _buildLivePrayersTab(contentTopPadding),
+              _buildWorldEventsTab(contentTopPadding),
+            ],
+          ),
+          
+          // Header blur overlay with IgnorePointer (allows scroll through)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: IgnorePointer(
+              child: ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    height: MediaQuery.of(context).padding.top + 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.6),
+                          Colors.black.withOpacity(0.4),
+                          Colors.black.withOpacity(0.2),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.3, 0.7, 1.0],
+                      ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
+            ),
+          ),
+          
+          // Header content on top
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: _buildHeader(),
+          ),
+          
+          // Floating tab chips (straddling the header edge like Quran page)
+          Positioned(
+            left: 16,
+            top: MediaQuery.of(context).padding.top + 64,
+            child: Row(
+              children: [
+                _buildFloatingTabChip('Canlı Dualar', Icons.favorite_border, 0),
+                const SizedBox(width: 8),
+                _buildFloatingTabChip('Dünya Olayları', Icons.public, 1),
+              ],
+            ),
           ),
           
           // Floating Request Prayer button
@@ -173,28 +229,6 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             bottom: 140,
             right: 16,
             child: _buildRequestPrayerButton(),
-          ),
-          
-          // Top gradient overlay with edge line
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            child: IgnorePointer(
-              child: Container(
-                height: MediaQuery.of(context).padding.top,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.4),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ),
         ],
       ),
@@ -204,20 +238,13 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   Widget _buildHeader() {
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
+        top: MediaQuery.of(context).padding.top + 16,
         left: 16,
         right: 16,
-        bottom: 12,
       ),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.1),
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Row(
+      child: SizedBox(
+        height: 40,
+        child: Row(
         children: [
           // Profile Avatar
           Container(
@@ -238,7 +265,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
               child: Text(
                 'K',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -246,16 +273,22 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             ),
           ),
           
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           
           // Title
-          const Expanded(
+          Expanded(
             child: Text(
               'Topluluk',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
             ),
           ),
@@ -297,57 +330,88 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             ),
           ),
         ],
+        ),
       ),
     );
   }
 
-  Widget _buildTabBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: Colors.white,
-        indicatorWeight: 2,
-        indicatorSize: TabBarIndicatorSize.label,
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.white.withOpacity(0.5),
-        labelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
+  Widget _buildFloatingTabChip(String label, IconData icon, int tabIndex) {
+    final isSelected = _tabController.index == tabIndex;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _tabController.animateTo(tabIndex);
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-        tabs: const [
-          Tab(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.favorite_border, size: 18),
-                SizedBox(width: 6),
-                Text('Canlı Dualar'),
-              ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: isSelected 
+                    ? Colors.white.withOpacity(0.15)
+                    : Colors.white.withOpacity(0.08),
+                border: Border.all(
+                  color: isSelected
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(isSelected ? 0.22 : 0.18),
+                    Colors.white.withOpacity(isSelected ? 0.08 : 0.06),
+                    Colors.white.withOpacity(isSelected ? 0.04 : 0.02),
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: Colors.white.withOpacity(isSelected ? 1.0 : 0.7),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: Colors.white.withOpacity(isSelected ? 1.0 : 0.7),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Tab(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.public, size: 18),
-                SizedBox(width: 6),
-                Text('Dünya Olayları'),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildLivePrayersTab() {
+  Widget _buildLivePrayersTab(double topPadding) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 180),
+      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 180),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -639,39 +703,38 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildWorldEventsTab() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.public,
-              size: 64,
-              color: Colors.white.withOpacity(0.3),
+  Widget _buildWorldEventsTab(double topPadding) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(32, topPadding, 32, 180),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 60),
+          Icon(
+            Icons.public,
+            size: 64,
+            color: Colors.white.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Dünya Olayları',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white.withOpacity(0.7),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Dünya Olayları',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(0.7),
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Dünya genelinde önemli olaylar ve\ntopluluk duaları için bizi takip edin',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: Colors.white.withOpacity(0.5),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Dünya genelinde önemli olaylar ve\ntopluluk duaları için bizi takip edin',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.5,
-                color: Colors.white.withOpacity(0.5),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

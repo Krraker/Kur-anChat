@@ -1,3 +1,5 @@
+import 'message.dart' show decodeHtmlEntities;
+
 class QuranVerse {
   final int id;
   final int surah;
@@ -21,8 +23,8 @@ class QuranVerse {
       surah: json['surah'] as int,
       surahName: json['surah_name'] as String?,
       ayah: json['ayah'] as int,
-      textAr: json['text_ar'] as String,
-      textTr: json['text_tr'] as String,
+      textAr: decodeHtmlEntities(json['text_ar'] as String),
+      textTr: decodeHtmlEntities(json['text_tr'] as String),
     );
   }
 

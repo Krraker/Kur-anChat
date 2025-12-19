@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api_config.dart';
+import '../models/message.dart' show decodeHtmlEntities;
 
 /// Service for fetching daily content from the backend
 class DailyContentService {
@@ -141,8 +142,8 @@ class VerseData {
       surah: json['surah'] ?? 1,
       ayah: json['ayah'] ?? 1,
       surahName: json['surahName'] ?? 'Fatiha',
-      arabic: json['arabic'] ?? '',
-      turkish: json['turkish'] ?? '',
+      arabic: decodeHtmlEntities(json['arabic'] ?? ''),
+      turkish: decodeHtmlEntities(json['turkish'] ?? ''),
     );
   }
 
@@ -189,9 +190,9 @@ class TafsirData {
       surah: json['surah'] ?? 1,
       ayah: json['ayah'] ?? 1,
       surahName: json['surahName'] ?? '',
-      arabic: json['arabic'] ?? '',
-      turkish: json['turkish'] ?? '',
-      commentary: json['commentary'],
+      arabic: decodeHtmlEntities(json['arabic'] ?? ''),
+      turkish: decodeHtmlEntities(json['turkish'] ?? ''),
+      commentary: json['commentary'] != null ? decodeHtmlEntities(json['commentary']) : null,
     );
   }
 }
@@ -209,9 +210,9 @@ class PrayerData {
 
   factory PrayerData.fromJson(Map<String, dynamic> json) {
     return PrayerData(
-      arabic: json['arabic'] ?? '',
-      turkish: json['turkish'] ?? '',
-      source: json['source'],
+      arabic: decodeHtmlEntities(json['arabic'] ?? ''),
+      turkish: decodeHtmlEntities(json['turkish'] ?? ''),
+      source: json['source'] != null ? decodeHtmlEntities(json['source']) : null,
     );
   }
 

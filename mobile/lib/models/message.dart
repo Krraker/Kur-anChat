@@ -1,5 +1,20 @@
 import 'quran_verse.dart';
 
+/// Decodes common HTML entities in text
+String decodeHtmlEntities(String text) {
+  return text
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#34;', '"')
+      .replaceAll('&apos;', "'")
+      .replaceAll('&#39;', "'")
+      .replaceAll('&amp;', '&')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&#x27;', "'")
+      .replaceAll('&#x22;', '"');
+}
+
 enum MessageSender { user, assistant }
 
 class Message {
@@ -65,11 +80,11 @@ class AssistantMessageContent extends MessageContent {
 
   factory AssistantMessageContent.fromJson(Map<String, dynamic> json) {
     return AssistantMessageContent(
-      summary: json['summary'] as String,
+      summary: decodeHtmlEntities(json['summary'] as String),
       verses: (json['verses'] as List)
           .map((v) => QuranVerse.fromJson(v as Map<String, dynamic>))
           .toList(),
-      disclaimer: json['disclaimer'] as String,
+      disclaimer: decodeHtmlEntities(json['disclaimer'] as String),
     );
   }
 

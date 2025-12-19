@@ -227,9 +227,9 @@ class _DayCircle extends StatelessWidget {
       child: Center(
         child: isCompleted
             ? SvgPicture.asset(
-                'assets/icons/allah_icon.svg',
-                width: 28,
-                height: 28,
+                'assets/UI/ICONS/fireicon.svg',
+                width: 24,
+                height: 24,
                 colorFilter: const ColorFilter.mode(
                   Colors.white,
                   BlendMode.srcIn,

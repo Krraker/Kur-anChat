@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../styles/styles.dart';
 
 class WidgetSetupStep extends StatefulWidget {
@@ -326,10 +327,14 @@ class _WidgetSetupStepState extends State<WidgetSetupStep> {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.local_fire_department,
-                  color: Colors.orange.shade300,
-                  size: 20,
+                SvgPicture.asset(
+                  'assets/UI/ICONS/fireicon.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(
+                    Colors.orange.shade300,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
 
@@ -404,10 +405,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   Widget _buildStatsGrid() {
     final stats = [
-      {'icon': Icons.local_fire_department, 'value': '${_userData['streak']}', 'label': 'Gün Serisi', 'color': Colors.orange},
-      {'icon': Icons.menu_book, 'value': '${_userData['totalVerses']}', 'label': 'Okunan Ayet', 'color': GlobalAppStyle.accentColor},
-      {'icon': Icons.auto_stories, 'value': '${_userData['totalSurahs']}', 'label': 'Sure', 'color': Colors.blue},
-      {'icon': Icons.emoji_events, 'value': '${_userData['achievements']}', 'label': 'Başarı', 'color': Colors.amber},
+      {'icon': null, 'svgPath': 'assets/UI/ICONS/fireicon.svg', 'value': '${_userData['streak']}', 'label': 'Gün Serisi', 'color': Colors.orange},
+      {'icon': null, 'svgPath': 'assets/icons/quran_icon.svg', 'value': '${_userData['totalVerses']}', 'label': 'Okunan Ayet', 'color': GlobalAppStyle.accentColor},
+      {'icon': Icons.auto_stories, 'svgPath': null, 'value': '${_userData['totalSurahs']}', 'label': 'Sure', 'color': Colors.blue},
+      {'icon': Icons.emoji_events, 'svgPath': null, 'value': '${_userData['achievements']}', 'label': 'Başarı', 'color': Colors.amber},
     ];
 
     return Column(
@@ -444,7 +445,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: _buildStatCard(
-                  stat['icon'] as IconData,
+                  stat['icon'] as IconData?,
+                  stat['svgPath'] as String?,
                   stat['value'] as String,
                   stat['label'] as String,
                   stat['color'] as Color,
@@ -457,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildStatCard(IconData icon, String value, String label, Color color) {
+  Widget _buildStatCard(IconData? icon, String? svgPath, String value, String label, Color color) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: BackdropFilter(
@@ -474,11 +476,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                size: 22,
-                color: color,
-              ),
+              if (svgPath != null)
+                SvgPicture.asset(
+                  svgPath,
+                  width: 26,
+                  height: 26,
+                  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                )
+              else
+                Icon(
+                  icon,
+                  size: 22,
+                  color: color,
+                ),
               const SizedBox(height: 8),
               Text(
                 value,
@@ -646,13 +656,21 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               ),
             ),
             child: Center(
-              child: Icon(
-                isCompleted ? Icons.check : Icons.menu_book_outlined,
-                size: 16,
-                color: isCompleted 
-                    ? GlobalAppStyle.accentColor
-                    : Colors.white.withOpacity(0.6),
-              ),
+              child: isCompleted 
+                  ? const Icon(
+                      Icons.check,
+                      size: 16,
+                      color: GlobalAppStyle.accentColor,
+                    )
+                  : SvgPicture.asset(
+                      'assets/icons/quran_icon.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: ColorFilter.mode(
+                        Colors.white.withOpacity(0.6),
+                        BlendMode.srcIn,
+                      ),
+                    ),
             ),
           ),
           

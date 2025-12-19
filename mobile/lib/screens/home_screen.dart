@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
@@ -212,11 +213,13 @@ class _HomeScreenState extends State<HomeScreen> {
             top: 0,
             child: Container(
               padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 8,
+                top: MediaQuery.of(context).padding.top + 16,
                 left: 16,
                 right: 16,
               ),
-              child: Row(
+              child: SizedBox(
+                height: 40,
+                child: Row(
                 children: [
                   // Profile Avatar (Long press to reset onboarding)
                   GestureDetector(
@@ -266,54 +269,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   const SizedBox(width: 14),
                   
-                  // Title and Subtitle
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Günün Yolculuğu',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              'Manevi Gelişim',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withOpacity(0.7),
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              Icons.info_outline,
-                              size: 14,
-                              color: Colors.white.withOpacity(0.5),
-                            ),
-                          ],
+                  // Title
+                  Text(
+                    'Günün Yolculuğu',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 8,
                         ),
                       ],
                     ),
                   ),
+                  
+                  const Spacer(),
                   
                   // Streak Counter
                   Container(
@@ -332,10 +304,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.local_fire_department,
-                          size: 16,
-                          color: Color(0xFFFFB74D),
+                        SvgPicture.asset(
+                          'assets/UI/ICONS/fireicon.svg',
+                          width: 16,
+                          height: 16,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFFFFB74D),
+                            BlendMode.srcIn,
+                          ),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -379,6 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ],
+                ),
               ),
             ),
           ),

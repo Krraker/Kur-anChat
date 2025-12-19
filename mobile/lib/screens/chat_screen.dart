@@ -111,92 +111,109 @@ class _ChatScreenState extends State<ChatScreen> {
                 left: 0,
                 right: 0,
                 top: 0,
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(
-                      height: 48,
-                      child: Row(
-                        children: [
-                          // Back button when in chat view (to go back to chat home)
-                          if (_showChat)
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-                              onPressed: () {
-                                setState(() {
-                                  _showChat = false;
-                                });
-                              },
-                            )
-                          else ...[
-                            // Profile Avatar
-                            Container(
-                              width: 38,
-                              height: 38,
+                child: Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 16,
+                    right: 16,
+                  ),
+                  child: SizedBox(
+                    height: 40,
+                    child: Row(
+                      children: [
+                        // Back button when in chat view (to go back to chat home)
+                        if (_showChat)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _showChat = false;
+                              });
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    GlobalAppStyle.accentColor,
-                                    GlobalAppStyle.accentColor.withOpacity(0.7),
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    spreadRadius: 2,
-                                  ),
+                                color: Colors.white.withOpacity(0.1),
+                              ),
+                              child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+                            ),
+                          )
+                        else
+                          // Profile Avatar
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  GlobalAppStyle.accentColor,
+                                  GlobalAppStyle.accentColor.withOpacity(0.7),
                                 ],
                               ),
-                              child: const Center(
-                                child: Text(
-                                  'K',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                          ],
-                          
-                          // Title
-                          Text(
-                            _showChat ? 'Sohbet' : 'Chat',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.4),
-                                  blurRadius: 8,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: GlobalAppStyle.accentColor.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
                                 ),
                               ],
                             ),
-                          ),
-                          
-                          const Spacer(),
-                          
-                          // Refresh button (only in chat)
-                          if (_showChat)
-                            IconButton(
-                              icon: const Icon(Icons.refresh, color: Colors.white),
-                              onPressed: () {
-                                chatProvider.clearMessages();
-                                setState(() {
-                                  _showChat = false;
-                                });
-                              },
+                            child: const Center(
+                              child: Text(
+                                'K',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
-                        ],
-                      ),
+                          ),
+                        
+                        const SizedBox(width: 14),
+                        
+                        // Title
+                        Text(
+                          _showChat ? 'Sohbet' : 'Chat',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.4),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        const Spacer(),
+                        
+                        // Refresh button (only in chat)
+                        if (_showChat)
+                          GestureDetector(
+                            onTap: () {
+                              chatProvider.clearMessages();
+                              setState(() {
+                                _showChat = false;
+                              });
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.1),
+                              ),
+                              child: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

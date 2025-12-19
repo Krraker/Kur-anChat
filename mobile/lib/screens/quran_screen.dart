@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
 import '../services/api_config.dart';
+import '../models/message.dart' show decodeHtmlEntities;
 
 /// Quran reading screen - with API integration
 class QuranScreen extends StatefulWidget {
@@ -46,8 +47,8 @@ class _QuranScreenState extends State<QuranScreen> {
         final data = json.decode(response.body);
         final verses = (data['verses'] as List).map((v) => {
           'number': v['ayah'] ?? 0,
-          'arabic': v['arabic'] ?? v['text_ar'] ?? '',
-          'translation': v['turkish'] ?? v['text_tr'] ?? '',
+          'arabic': decodeHtmlEntities(v['arabic'] ?? v['text_ar'] ?? ''),
+          'translation': decodeHtmlEntities(v['turkish'] ?? v['text_tr'] ?? ''),
         }).toList();
 
         setState(() {
@@ -72,19 +73,75 @@ class _QuranScreenState extends State<QuranScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final headerHeight = MediaQuery.of(context).padding.top + 72;
+    
     return Scaffold(
       body: AppGradientBackground(
         child: Stack(
         children: [
-          // Main content
-          Column(
-            children: [
-              // Top gradient overlay with blur
-              ClipRect(
+          // Scrollable verses content - starts from top, scrolls under header
+          _isLoading
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: headerHeight + 60),
+                    child: const CircularProgressIndicator(
+                      color: GlobalAppStyle.accentColor,
+                    ),
+                  ),
+                )
+              : _error != null
+                  ? Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: headerHeight + 60),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.white.withOpacity(0.5),
+                              size: 48,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _error!,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _loadSurah(selectedSurahNumber),
+                              child: const Text('Tekrar Dene'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: headerHeight + 60,
+                        bottom: 200,
+                      ),
+                      itemCount: _verses.length,
+                      itemBuilder: (context, index) {
+                        final verse = _verses[index];
+                        return _buildVerseItem(verse);
+                      },
+                    ),
+          
+          // Header blur overlay (same as other pages)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: IgnorePointer(
+              child: ClipRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
-                    height: MediaQuery.of(context).padding.top + 100,
+                    height: MediaQuery.of(context).padding.top + 80,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -104,160 +161,123 @@ class _QuranScreenState extends State<QuranScreen> {
                         ),
                       ),
                     ),
-                    child: SafeArea(
-                      bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            // Profile Avatar
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    GlobalAppStyle.accentColor,
-                                    GlobalAppStyle.accentColor.withOpacity(0.7),
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'K',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            
-                            const SizedBox(width: 14),
-                            
-                            // Title
-                            Text(
-                              'Kur\'an',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.4),
-                                    blurRadius: 8,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            const Spacer(),
-                            
-                            // Search Icon
-                            IconButton(
-                              icon: Icon(
-                                Icons.search,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                              onPressed: () {},
-                            ),
-                            
-                            // More options
-                            IconButton(
-                              icon: Icon(
-                                Icons.more_horiz,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                              onPressed: () {},
-                            ),
-                          ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Header content on top
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                right: 16,
+              ),
+              child: SizedBox(
+                height: 40,
+                child: Row(
+                children: [
+                  // Profile Avatar
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          GlobalAppStyle.accentColor,
+                          GlobalAppStyle.accentColor.withOpacity(0.7),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: GlobalAppStyle.accentColor.withOpacity(0.3),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'K',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              
-              // Surah selector chips
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    // Surah chip
-                    _buildSelectorChip(
-                      '$selectedSurah $selectedSurahNumber',
-                      onTap: () => _showSurahSelector(),
-                    ),
-                    const SizedBox(width: 8),
-                    // Translation chip
-                    _buildSelectorChip(
-                      selectedTranslation,
-                      onTap: () => _showTranslationSelector(),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Verses list
-              Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: GlobalAppStyle.accentColor,
+                  
+                  const SizedBox(width: 14),
+                  
+                  // Title
+                  Text(
+                    'Kur\'an',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 8,
                         ),
-                      )
-                    : _error != null
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  color: Colors.white.withOpacity(0.5),
-                                  size: 48,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _error!,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () => _loadSurah(selectedSurahNumber),
-                                  child: const Text('Tekrar Dene'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.only(
-                              left: 16,
-                              right: 16,
-                              bottom: 200,
-                            ),
-                            itemCount: _verses.length,
-                            itemBuilder: (context, index) {
-                              final verse = _verses[index];
-                              return _buildVerseItem(verse);
-                            },
-                          ),
+                      ],
+                    ),
+                  ),
+                  
+                  const Spacer(),
+                  
+                  // Search Icon
+                  IconButton(
+                    icon: Icon(
+                      Icons.search,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    onPressed: () {},
+                  ),
+                  
+                  // More options
+                  IconButton(
+                    icon: Icon(
+                      Icons.more_horiz,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    onPressed: () {},
+                  ),
+                ],
+                ),
               ),
-            ],
+            ),
+          ),
+          
+          // Floating selector chips with nav-bar glassmorphism
+          Positioned(
+            left: 16,
+            top: MediaQuery.of(context).padding.top + 64,
+            child: Row(
+              children: [
+                // Surah chip
+                _buildFloatingChip(
+                  '$selectedSurah $selectedSurahNumber',
+                  onTap: () => _showSurahSelector(),
+                ),
+                const SizedBox(width: 8),
+                // Translation chip
+                _buildFloatingChip(
+                  selectedTranslation,
+                  onTap: () => _showTranslationSelector(),
+                ),
+              ],
+            ),
           ),
           
           // Bottom navigation controls - floating glassmorphism buttons
@@ -304,31 +324,60 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
-  Widget _buildSelectorChip(String label, {VoidCallback? onTap}) {
+  Widget _buildFloatingChip(String label, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 0.5,
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
+            ),
+          ],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 4,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white.withOpacity(0.08),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.18),
+                    Colors.white.withOpacity(0.06),
+                    Colors.white.withOpacity(0.02),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
+                ),
               ),
-            ],
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
