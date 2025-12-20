@@ -1,8 +1,23 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../widgets/onboarding/continue_button.dart';
 import '../../styles/styles.dart';
+import '../../services/revenuecat_service.dart';
+
+// =============================================================================
+// ONBOARDING PAYWALL SCREEN
+// =============================================================================
+//
+// Animated paywall shown during onboarding flow.
+// Uses RevenueCatService singleton (configured once in main.dart).
+//
+// IMPORTANT:
+// - NEVER calls Purchases.configure() - that's done at app startup
+// - Uses listener-based updates for reactive Pro status
+//
+// =============================================================================
 
 class PaywallScreen extends StatefulWidget {
   final VoidCallback onContinue;
@@ -24,6 +39,11 @@ class _PaywallScreenState extends State<PaywallScreen>
     with TickerProviderStateMixin {
   bool _wantsTrial = true;
   int _selectedPlan = 0;
+  bool _isDisposed = false; // Track disposal state for async operations
+  bool _isLoading = true;
+  bool _isPurchasing = false;
+  List<Package> _packages = [];
+  String? _errorMessage;
 
   // Entry animation controllers (play once)
   late AnimationController _leftBigCloudController;
@@ -58,6 +78,9 @@ class _PaywallScreenState extends State<PaywallScreen>
   @override
   void initState() {
     super.initState();
+    
+    // Load subscription packages from RevenueCat
+    _loadOfferings();
 
     // === ENTRY ANIMATIONS (very slow, elegant) ===
     
@@ -160,44 +183,54 @@ class _PaywallScreenState extends State<PaywallScreen>
 
   void _startEntryAnimations() async {
     // Right cloud comes FIRST from the right
+    if (_isDisposed) return;
     _rightCloudController.forward();
     
     // Left big cloud comes second
     await Future.delayed(const Duration(milliseconds: 800));
+    if (_isDisposed || !mounted) return;
     _leftBigCloudController.forward();
     
     // Left small cloud comes third
     await Future.delayed(const Duration(milliseconds: 1200));
+    if (_isDisposed || !mounted) return;
     _leftSmallCloudController.forward();
     
     // Dove appears after clouds are moving
     await Future.delayed(const Duration(milliseconds: 1500));
+    if (_isDisposed || !mounted) return;
     _doveController.forward();
     
     // Stars appear last
     await Future.delayed(const Duration(milliseconds: 1800));
+    if (_isDisposed || !mounted) return;
     _starsController.forward();
     
     // Start the subtle horizontal floating after intro completes
     await Future.delayed(const Duration(milliseconds: 3000));
+    if (_isDisposed || !mounted) return;
     _startFloatingAnimations();
   }
 
   void _startFloatingAnimations() {
     // Start floating with different phases for organic feel
+    if (_isDisposed || !mounted) return;
     _floatController1.repeat(reverse: true);
     
     Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted) _floatController2.repeat(reverse: true);
+      if (_isDisposed || !mounted) return;
+      _floatController2.repeat(reverse: true);
     });
     
     Future.delayed(const Duration(milliseconds: 3500), () {
-      if (mounted) _floatController3.repeat(reverse: true);
+      if (_isDisposed || !mounted) return;
+      _floatController3.repeat(reverse: true);
     });
   }
 
   @override
   void dispose() {
+    _isDisposed = true; // Mark as disposed before disposing controllers
     _leftBigCloudController.dispose();
     _leftSmallCloudController.dispose();
     _rightCloudController.dispose();
@@ -208,6 +241,174 @@ class _PaywallScreenState extends State<PaywallScreen>
     _floatController3.dispose();
     _sunPulseController.dispose();
     super.dispose();
+  }
+
+  /// Load subscription packages from RevenueCat
+  Future<void> _loadOfferings() async {
+    try {
+      // Get packages from RevenueCat service (already configured in main.dart)
+      final packages = await RevenueCatService.I.getPackages();
+      
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _packages = packages;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading offerings: $e');
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = isEnglish 
+              ? 'Unable to load subscription options' 
+              : 'Abonelik seçenekleri yüklenemedi';
+        });
+      }
+    }
+  }
+
+  /// Handle subscription purchase
+  Future<void> _purchaseSelectedPlan() async {
+    // If no packages loaded, allow free trial (skip)
+    if (_packages.isEmpty) {
+      widget.onContinue();
+      return;
+    }
+
+    // Get the selected package
+    Package? selectedPackage;
+    if (_selectedPlan < _packages.length) {
+      selectedPackage = _packages[_selectedPlan];
+    } else if (_packages.isNotEmpty) {
+      selectedPackage = _packages.first;
+    }
+
+    if (selectedPackage == null) {
+      widget.onContinue();
+      return;
+    }
+
+    setState(() {
+      _isPurchasing = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await RevenueCatService.I.buyPackage(selectedPackage);
+      
+      if (mounted && !_isDisposed) {
+        setState(() => _isPurchasing = false);
+        
+        switch (result) {
+          case PurchaseSuccess():
+            _showSuccessAndContinue();
+            break;
+          case PurchaseCancelled():
+            // User cancelled - don't show error, just let them try again
+            break;
+          case PurchaseFailed(:final error):
+            setState(() {
+              _errorMessage = error ?? (isEnglish
+                  ? 'Purchase was not completed. Try again or skip.'
+                  : 'Satın alma tamamlanmadı. Tekrar deneyin veya atlayın.');
+            });
+            break;
+        }
+      }
+    } catch (e) {
+      debugPrint('Purchase error: $e');
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _isPurchasing = false;
+          _errorMessage = isEnglish
+              ? 'An error occurred. Please try again.'
+              : 'Bir hata oluştu. Lütfen tekrar deneyin.';
+        });
+      }
+    }
+  }
+
+  /// Restore previous purchases
+  Future<void> _restorePurchases() async {
+    setState(() => _isPurchasing = true);
+    
+    try {
+      final result = await RevenueCatService.I.restore();
+      
+      if (mounted && !_isDisposed) {
+        setState(() => _isPurchasing = false);
+        
+        switch (result) {
+          case RestoreSuccess(:final isPro):
+            if (isPro) {
+              _showSuccessAndContinue();
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(isEnglish 
+                      ? 'No previous purchases found' 
+                      : 'Önceki satın alma bulunamadı'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            break;
+          case RestoreFailed(:final error):
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error ?? (isEnglish 
+                    ? 'Restore failed' 
+                    : 'Geri yükleme başarısız')),
+                backgroundColor: Colors.red,
+              ),
+            );
+            break;
+        }
+      }
+    } catch (e) {
+      if (mounted && !_isDisposed) {
+        setState(() => _isPurchasing = false);
+      }
+    }
+  }
+
+  void _showSuccessAndContinue() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isEnglish 
+            ? '🎉 Welcome to Premium!' 
+            : '🎉 Premium\'a hoş geldiniz!'),
+        backgroundColor: GlobalAppStyle.accentColor,
+      ),
+    );
+    
+    // Small delay to show the success message
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted && !_isDisposed) {
+        widget.onContinue();
+      }
+    });
+  }
+
+  /// Get display price for a package
+  String _getPackagePrice(int index) {
+    if (index < _packages.length) {
+      return _packages[index].storeProduct.priceString;
+    }
+    // Fallback prices if packages not loaded
+    // USD: Weekly $1.99, Monthly $7.99, Yearly $29.99
+    // TRY: Weekly ₺29,99, Monthly ₺99,99, Yearly ₺699,99
+    switch (index) {
+      case 0: // Weekly
+        return isEnglish ? '\$1.99/wk' : '₺29,99/hafta';
+      case 1: // Monthly
+        return isEnglish ? '\$7.99/mo' : '₺99,99/ay';
+      case 2: // Yearly
+        return isEnglish ? '\$29.99/yr' : '₺699,99/yıl';
+      default:
+        return '';
+    }
   }
 
   @override
@@ -291,29 +492,39 @@ class _PaywallScreenState extends State<PaywallScreen>
 
                       const SizedBox(height: 6),
 
-                      // Pricing options
-                      _buildPricingOption(
-                        title: isEnglish
-                            ? '7 Days Free Trial'
-                            : '7 Gün Ücretsiz Deneme',
-                        subtitle: isEnglish
-                            ? 'Then \$4.99/month. No payment now.'
-                            : 'Sonra aylık ₺49,99. Şimdi ödeme yok.',
-                        isSelected: _selectedPlan == 0,
-                        onTap: () => setState(() => _selectedPlan = 0),
-                      ),
+                      // Pricing options - show loading or real packages
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: CircularProgressIndicator(
+                            color: Colors.white54,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      else ...[
+                        _buildPricingOption(
+                          title: isEnglish
+                              ? '7 Days Free Trial'
+                              : '7 Gün Ücretsiz Deneme',
+                          subtitle: isEnglish
+                              ? 'Then ${_getPackagePrice(0)}. No payment now.'
+                              : 'Sonra ${_getPackagePrice(0)}. Şimdi ödeme yok.',
+                          isSelected: _selectedPlan == 0,
+                          onTap: () => setState(() => _selectedPlan = 0),
+                        ),
 
-                      const SizedBox(height: 5),
+                        const SizedBox(height: 5),
 
-                      _buildPricingOption(
-                        title: isEnglish ? 'Yearly Access' : 'Yıllık Erişim',
-                        subtitle: isEnglish
-                            ? 'Billed yearly at \$29.99'
-                            : 'Yıllık ₺299,99',
-                        isSelected: _selectedPlan == 1,
-                        badge: isEnglish ? 'SAVE 50%' : '%50 TASARRUF',
-                        onTap: () => setState(() => _selectedPlan = 1),
-                      ),
+                        _buildPricingOption(
+                          title: isEnglish ? 'Yearly Access' : 'Yıllık Erişim',
+                          subtitle: isEnglish
+                              ? 'Billed yearly at ${_getPackagePrice(1)}'
+                              : 'Yıllık ${_getPackagePrice(1)}',
+                          isSelected: _selectedPlan == 1,
+                          badge: isEnglish ? 'SAVE 50%' : '%50 TASARRUF',
+                          onTap: () => setState(() => _selectedPlan = 1),
+                        ),
+                      ],
 
                       const SizedBox(height: 5),
 
@@ -338,10 +549,35 @@ class _PaywallScreenState extends State<PaywallScreen>
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
                 child: Column(
                   children: [
-                    ContinueButton(
-                      text: isEnglish ? 'Try for Free' : 'Ücretsiz Dene',
-                      onPressed: widget.onContinue,
-                    ),
+                    // Error message if any
+                    if (_errorMessage != null) ...[
+                      Text(
+                        _errorMessage!,
+                        style: TextStyle(
+                          color: Colors.orange.shade300,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    
+                    // Purchase button with loading state
+                    _isPurchasing
+                        ? const SizedBox(
+                            height: 56,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: GlobalAppStyle.accentColor,
+                              ),
+                            ),
+                          )
+                        : ContinueButton(
+                            text: _wantsTrial
+                                ? (isEnglish ? 'Try for Free' : 'Ücretsiz Dene')
+                                : (isEnglish ? 'Subscribe Now' : 'Şimdi Abone Ol'),
+                            onPressed: _purchaseSelectedPlan,
+                          ),
 
                     const SizedBox(height: 10),
 
@@ -356,7 +592,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                             ? 'Privacy Policy'
                             : 'Gizlilik Politikası'),
                         const SizedBox(width: 16),
-                        _buildTermsLink(isEnglish ? 'Restore' : 'Geri Yükle'),
+                        _buildRestoreLink(),
                       ],
                     ),
                   ],
@@ -754,13 +990,30 @@ class _PaywallScreenState extends State<PaywallScreen>
   Widget _buildTermsLink(String text) {
     return GestureDetector(
       onTap: () {
-        // TODO: Open terms
+        // TODO: Open terms URL in browser
+        // You can use url_launcher package here
       },
       child: Text(
         text,
         style: TextStyle(
           fontSize: 12,
           color: Colors.white.withOpacity(0.5),
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRestoreLink() {
+    return GestureDetector(
+      onTap: _isPurchasing ? null : _restorePurchases,
+      child: Text(
+        isEnglish ? 'Restore' : 'Geri Yükle',
+        style: TextStyle(
+          fontSize: 12,
+          color: _isPurchasing 
+              ? Colors.white.withOpacity(0.3)
+              : Colors.white.withOpacity(0.5),
           decoration: TextDecoration.underline,
         ),
       ),

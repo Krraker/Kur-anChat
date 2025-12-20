@@ -177,7 +177,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
-                    height: MediaQuery.of(context).padding.top + 80,
+                    height: MediaQuery.of(context).padding.top + 72,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,

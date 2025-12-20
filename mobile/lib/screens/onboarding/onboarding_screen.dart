@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/app_gradient_background.dart';
 import '../../widgets/onboarding/onboarding_progress_bar.dart';
 import '../../widgets/onboarding/continue_button.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 import '../main_navigation.dart';
 import 'steps/language_step.dart';
 import 'steps/age_step.dart';
@@ -68,6 +70,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
+    // Save to AuthService (secure storage)
+    await AuthService().setOnboardingComplete(true);
+    
+    // Also save to SharedPreferences for backwards compatibility
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
     
@@ -79,10 +85,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setStringList('user_goals', _selectedGoals.toList());
     if (_userInterests != null) await prefs.setString('user_interests', _userInterests!);
     
+    // Register device with backend (non-blocking)
+    _registerDeviceWithBackend();
+    
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainNavigation()),
       );
+    }
+  }
+  
+  /// Register device with backend to create user record
+  Future<void> _registerDeviceWithBackend() async {
+    try {
+      await ApiService().registerDevice();
+      debugPrint('Device registered with backend');
+    } catch (e) {
+      // Non-blocking - app works without backend registration
+      debugPrint('Could not register device: $e');
     }
   }
 

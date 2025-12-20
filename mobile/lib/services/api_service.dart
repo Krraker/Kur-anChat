@@ -1,26 +1,60 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/message.dart';
 import '../models/conversation.dart';
+import 'auth_service.dart';
+import 'api_config.dart';
 
 class ApiService {
-  // Change this to your backend URL
-  // For Android emulator use: http://10.0.2.2:3001/api
-  // For iOS simulator use: http://localhost:3001/api
-  // For physical device use your computer's IP: http://192.168.x.x:3001/api
-  static const String baseUrl = 'http://localhost:3001/api';
-
   final http.Client _client = http.Client();
+
+  /// Get headers including auth headers
+  Map<String, String> _getHeaders() {
+    final authHeaders = AuthService().getAuthHeaders();
+    return {
+      'Content-Type': 'application/json',
+      ...authHeaders,
+    };
+  }
+
+  /// Register device with backend (creates user if not exists)
+  Future<Map<String, dynamic>?> registerDevice() async {
+    try {
+      final response = await _client.post(
+        Uri.parse('${ApiConfig.baseUrl}/user/register-device'),
+        headers: _getHeaders(),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        
+        // Save user ID from response
+        if (data['userId'] != null) {
+          await AuthService().setUserId(data['userId']);
+        }
+        
+        return data;
+      } else {
+        debugPrint('Failed to register device: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error registering device: $e');
+      return null;
+    }
+  }
 
   Future<ChatResponse> sendMessage({
     required String message,
     String? conversationId,
-    String userId = 'demo-user',
   }) async {
     try {
+      final userId = AuthService().userId ?? AuthService().deviceId ?? 'anonymous';
+      
       final response = await _client.post(
-        Uri.parse('$baseUrl/chat'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('${ApiConfig.baseUrl}/chat'),
+        headers: _getHeaders(),
         body: jsonEncode({
           'message': message,
           if (conversationId != null) 'conversationId': conversationId,
@@ -42,13 +76,13 @@ class ApiService {
     }
   }
 
-  Future<List<Conversation>> getConversations({
-    String userId = 'demo-user',
-  }) async {
+  Future<List<Conversation>> getConversations() async {
     try {
+      final userId = AuthService().userId ?? AuthService().deviceId ?? 'anonymous';
+      
       final response = await _client.get(
-        Uri.parse('$baseUrl/conversations?userId=$userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('${ApiConfig.baseUrl}/conversations?userId=$userId'),
+        headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -70,8 +104,8 @@ class ApiService {
   Future<Conversation> getConversation(String conversationId) async {
     try {
       final response = await _client.get(
-        Uri.parse('$baseUrl/conversations/$conversationId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('${ApiConfig.baseUrl}/conversations/$conversationId'),
+        headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -80,6 +114,49 @@ class ApiService {
       } else {
         throw ApiException(
           'Failed to get conversation: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException('Network error: $e', 0);
+    }
+  }
+
+  /// Generic GET request
+  Future<dynamic> get(String endpoint) async {
+    try {
+      final response = await _client.get(
+        Uri.parse('${ApiConfig.baseUrl}$endpoint'),
+        headers: _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw ApiException(
+          'GET $endpoint failed: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      throw ApiException('Network error: $e', 0);
+    }
+  }
+
+  /// Generic POST request
+  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('${ApiConfig.baseUrl}$endpoint'),
+        headers: _getHeaders(),
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw ApiException(
+          'POST $endpoint failed: ${response.statusCode}',
           response.statusCode,
         );
       }
@@ -121,5 +198,3 @@ class ApiException implements Exception {
   @override
   String toString() => message;
 }
-
-

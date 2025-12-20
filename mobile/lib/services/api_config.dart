@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 /// API Configuration for the app
 class ApiConfig {
@@ -7,8 +8,8 @@ class ApiConfig {
   factory ApiConfig() => _instance;
   ApiConfig._internal();
 
-  /// Get the appropriate base URL based on platform
-  String get baseUrl {
+  /// Development URLs
+  static String get _devBaseUrl {
     // For iOS Simulator
     if (Platform.isIOS) {
       return 'http://localhost:3001/api';
@@ -21,22 +22,29 @@ class ApiConfig {
     return 'http://localhost:3001/api';
   }
 
-  /// Production URL (update when deploying)
-  static const String productionUrl = 'https://your-api-domain.com/api';
+  /// Production URL - UPDATE THIS with your Railway/Render URL
+  static const String _prodBaseUrl = 'https://kuranchat-backend.up.railway.app/api';
 
   /// Check if we're in production mode
-  static const bool isProduction = false;
+  /// In release builds, this will be true
+  static bool get isProduction {
+    return kReleaseMode;
+  }
 
-  /// Get the active URL
-  String get activeUrl => isProduction ? productionUrl : baseUrl;
+  /// Get the active base URL
+  static String get baseUrl {
+    return isProduction ? _prodBaseUrl : _devBaseUrl;
+  }
+
+  /// Instance method for backwards compatibility
+  String get activeUrl => baseUrl;
 
   /// Timeout duration for API calls
-  Duration get timeout => const Duration(seconds: 10);
+  Duration get timeout => const Duration(seconds: 15);
 
-  /// Headers for API requests
+  /// Default headers for API requests
   Map<String, String> get headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 }
-

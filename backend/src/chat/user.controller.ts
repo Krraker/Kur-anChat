@@ -6,7 +6,52 @@ export class UserController {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Register or get existing user by device ID
+   * Register device using header (used by mobile app)
+   * Creates or returns existing user based on device ID in header
+   */
+  @Post('register-device')
+  @HttpCode(200)
+  async registerDevice(@Headers('x-device-id') deviceId: string) {
+    if (!deviceId) {
+      return { error: 'X-Device-ID header is required' };
+    }
+
+    // Find or create user
+    let user = await this.prisma.user.findUnique({
+      where: { deviceId },
+      include: { progress: true },
+    });
+
+    const isNewUser = !user;
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          deviceId,
+          progress: {
+            create: {
+              level: 1,
+              xp: 0,
+              streak: 0,
+              totalVersesRead: 0,
+            },
+          },
+        },
+        include: { progress: true },
+      });
+      console.log(`✅ New user created via device registration: ${user.id}`);
+    }
+
+    return {
+      userId: user.id,
+      deviceId: user.deviceId,
+      isNewUser,
+      progress: user.progress,
+    };
+  }
+
+  /**
+   * Register or get existing user by device ID (legacy - body based)
    */
   @Post('register')
   @HttpCode(200)
@@ -44,6 +89,33 @@ export class UserController {
 
     return {
       id: user.id,
+      deviceId: user.deviceId,
+      name: user.name,
+      language: user.language,
+      progress: user.progress,
+    };
+  }
+  
+  /**
+   * Get current user info
+   */
+  @Get('me')
+  async getCurrentUser(@Headers('x-device-id') deviceId: string) {
+    if (!deviceId) {
+      return { error: 'X-Device-ID header is required' };
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { deviceId },
+      include: { progress: true },
+    });
+
+    if (!user) {
+      return { error: 'User not found' };
+    }
+
+    return {
+      userId: user.id,
       deviceId: user.deviceId,
       name: user.name,
       language: user.language,

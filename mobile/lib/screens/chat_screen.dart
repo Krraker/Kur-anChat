@@ -13,16 +13,111 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _inputController = TextEditingController();
   bool _showChat = false;
+  
+  // Left side history panel state
+  bool _isHistoryPanelOpen = false;
+  late AnimationController _panelAnimationController;
+  late Animation<Offset> _panelSlideAnimation;
+  late Animation<double> _panelFadeAnimation;
+  
+  // Shine animation for start chat button
+  late AnimationController _shineAnimationController;
+  
+  // Mock chat history data (grouped by date)
+  final List<Map<String, dynamic>> _chatHistory = [
+    {
+      'date': 'Bugün',
+      'chats': [
+        {'title': 'Namaz vakitleri hakkında', 'preview': 'Sabah namazının vakti...', 'time': '14:30'},
+        {'title': 'Fatiha suresi tefsiri', 'preview': 'Fatiha suresinin anlamı...', 'time': '10:15'},
+      ],
+    },
+    {
+      'date': 'Dün',
+      'chats': [
+        {'title': 'Ramazan ayı soruları', 'preview': 'Oruç tutmanın faydaları...', 'time': '18:45'},
+        {'title': 'Dua önerileri', 'preview': 'Sabah duaları için...', 'time': '09:20'},
+      ],
+    },
+    {
+      'date': '17 Aralık',
+      'chats': [
+        {'title': 'Kuran okuma tavsiyeleri', 'preview': 'Günlük okuma planı...', 'time': '21:00'},
+      ],
+    },
+    {
+      'date': '15 Aralık',
+      'chats': [
+        {'title': 'Hz. Yusuf kıssası', 'preview': 'Yusuf suresindeki...', 'time': '16:30'},
+        {'title': 'Sabır hakkında ayetler', 'preview': 'Sabır ile ilgili...', 'time': '11:00'},
+      ],
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize panel animation controller
+    _panelAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    
+    _panelSlideAnimation = Tween<Offset>(
+      begin: const Offset(-1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _panelAnimationController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    ));
+    
+    _panelFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _panelAnimationController,
+      curve: Curves.easeOut,
+    ));
+    
+    // Initialize shine animation - slow, elegant loop
+    _shineAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 6000), // 6 seconds for very slow elegance
+    )..repeat(); // Loop forever
+  }
 
   @override
   void dispose() {
+    _panelAnimationController.dispose();
+    _shineAnimationController.dispose();
     _scrollController.dispose();
     _inputController.dispose();
     super.dispose();
+  }
+  
+  void _toggleHistoryPanel() {
+    if (_isHistoryPanelOpen) {
+      _panelAnimationController.reverse().then((_) {
+        setState(() => _isHistoryPanelOpen = false);
+      });
+    } else {
+      setState(() => _isHistoryPanelOpen = true);
+      _panelAnimationController.forward();
+    }
+  }
+  
+  void _closeHistoryPanel() {
+    if (_isHistoryPanelOpen) {
+      _panelAnimationController.reverse().then((_) {
+        setState(() => _isHistoryPanelOpen = false);
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -219,6 +314,17 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               
+              // Floating history chip
+              Positioned(
+                left: 16,
+                top: MediaQuery.of(context).padding.top + 64,
+                child: _buildFloatingChip(
+                  'Geçmiş Sohbetler',
+                  icon: Icons.history,
+                  onTap: _toggleHistoryPanel,
+                ),
+              ),
+              
               // Input bar (only when in chat mode)
               if (_showChat)
                 Positioned(
@@ -227,6 +333,33 @@ class _ChatScreenState extends State<ChatScreen> {
                   bottom: 130,
                   child: _buildInputBar(chatProvider),
                 ),
+              
+              // Left side history panel
+              if (_isHistoryPanelOpen) ...[
+                // Backdrop - tap to close
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _closeHistoryPanel,
+                    child: FadeTransition(
+                      opacity: _panelFadeAnimation,
+                      child: Container(
+                        color: Colors.black.withOpacity(0.4),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // The slide-in panel from left
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: SlideTransition(
+                    position: _panelSlideAnimation,
+                    child: _buildHistoryPanel(),
+                  ),
+                ),
+              ],
             ],
             ),
           ),
@@ -234,21 +367,332 @@ class _ChatScreenState extends State<ChatScreen> {
       },
     );
   }
+  
+  Widget _buildFloatingChip(String label, {IconData? icon, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white.withOpacity(0.08),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.18),
+                    Colors.white.withOpacity(0.06),
+                    Colors.white.withOpacity(0.02),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: Colors.white.withOpacity(0.9), size: 16),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildHistoryPanel() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final panelWidth = screenWidth * 0.75;
+    final topPadding = MediaQuery.of(context).padding.top + 110;
+    
+    return SizedBox(
+      width: panelWidth + 28,
+      child: Stack(
+        children: [
+          // Main panel
+          Container(
+            width: panelWidth,
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 30,
+                  offset: const Offset(10, 0),
+                  spreadRadius: -5,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    border: Border(
+                      right: BorderSide(
+                        color: Colors.white.withOpacity(0.15),
+                        width: 0.5,
+                      ),
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.15),
+                        Colors.white.withOpacity(0.05),
+                        Colors.white.withOpacity(0.02),
+                      ],
+                      stops: const [0.0, 0.3, 1.0],
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Fixed header
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.only(left: 16, right: 16, top: topPadding - 95, bottom: 16),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withOpacity(0.08),
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Sohbetler',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      // Scrollable chat history
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.only(top: 0, bottom: 120),
+                          children: [
+                            // Chat history grouped by date
+                            ..._chatHistory.map((group) => _buildHistoryGroup(group)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Minimize arrow button on the right edge
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Align(
+              alignment: const Alignment(0, 0.15),
+              child: GestureDetector(
+                onTap: _closeHistoryPanel,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 12,
+                        spreadRadius: -2,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.08),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.15),
+                            width: 0.5,
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withOpacity(0.18),
+                              Colors.white.withOpacity(0.06),
+                              Colors.white.withOpacity(0.02),
+                            ],
+                            stops: const [0.0, 0.3, 1.0],
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: Colors.white.withOpacity(0.9),
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildHistoryGroup(Map<String, dynamic> group) {
+    final date = group['date'] as String;
+    final chats = group['chats'] as List<Map<String, String>>;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Chats for this date - pass date to each item
+        ...chats.map((chat) => _buildHistoryChatItem(chat, date)),
+      ],
+    );
+  }
+  
+  Widget _buildHistoryChatItem(Map<String, String> chat, String date) {
+    return GestureDetector(
+      onTap: () {
+        _closeHistoryPanel();
+        // TODO: Load this chat conversation
+        _startChat(null);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.white.withOpacity(0.08),
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Chat details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    chat['title'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    chat['preview'] ?? '',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.5),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Date and time
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: GlobalAppStyle.accentColor.withOpacity(0.8),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  chat['time'] ?? '',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withOpacity(0.4),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildHomeView() {
     return SingleChildScrollView(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 64,
-        bottom: 160,
+        top: MediaQuery.of(context).padding.top + 100, // Account for header + chip
+        bottom: 140,
       ),
       child: Column(
         children: [
-          const SizedBox(height: 16),
-          
           // Verse of the Day Card
           _buildVerseOfDayCard(),
           
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
           // Chat & Reflect Section
           _buildChatReflectSection(),
@@ -406,7 +850,7 @@ class _ChatScreenState extends State<ChatScreen> {
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         color: Colors.black.withOpacity(0.75),
@@ -417,35 +861,6 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       child: Column(
         children: [
-          // History button
-          Align(
-            alignment: Alignment.topRight,
-            child: GestureDetector(
-              onTap: () {
-                // TODO: Show chat history
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                    width: 0.5,
-                  ),
-                ),
-                child: Icon(
-                  Icons.history,
-                  color: Colors.white.withOpacity(0.7),
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
           // Title
           Text(
             'Sohbet & Tefekkür',
@@ -462,7 +877,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           
           Text(
             'Bu konularda size yardımcı olabilirim...',
@@ -472,7 +887,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
           // Topic chips - wrapped
           Wrap(
@@ -486,7 +901,7 @@ class _ChatScreenState extends State<ChatScreen> {
             }).toList(),
           ),
           
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
           // OR divider
           Row(
@@ -517,51 +932,101 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
           
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
-          // Start new chat button - glassmorphism style
-          GestureDetector(
-            onTap: () => _startChat(null),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                    color: Colors.white.withOpacity(0.15),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 0.5,
+          // Start new chat button with shine animation
+          _buildShineButton(),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildShineButton() {
+    return GestureDetector(
+      onTap: () => _startChat(null),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: AnimatedBuilder(
+            animation: _shineAnimationController,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  // Base button
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white.withOpacity(0.15),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 0.5,
+                      ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.25),
+                          Colors.white.withOpacity(0.1),
+                          Colors.white.withOpacity(0.05),
+                        ],
+                        stops: const [0.0, 0.3, 1.0],
+                      ),
                     ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withOpacity(0.25),
-                        Colors.white.withOpacity(0.1),
-                        Colors.white.withOpacity(0.05),
-                      ],
-                      stops: const [0.0, 0.3, 1.0],
-                    ),
-              ),
-                  child: const Center(
-                child: Text(
-                  'Yeni sohbet başlat',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                    child: const Center(
+                      child: Text(
+                        'Yeni sohbet başlat',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
+                  // Shine overlay with fade in/out
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Opacity(
+                        // Fade in during first 15%, full opacity in middle, fade out during last 15%
+                        opacity: _shineAnimationController.value < 0.15
+                            ? (_shineAnimationController.value / 0.15)
+                            : _shineAnimationController.value > 0.85
+                                ? ((1.0 - _shineAnimationController.value) / 0.15)
+                                : 1.0,
+                        child: Transform.translate(
+                          offset: Offset(
+                            // Move from -100 to +400 (left to right across button)
+                            -100 + (_shineAnimationController.value * 500),
+                            0,
+                          ),
+                          child: Container(
+                            width: 100,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.white.withOpacity(0.04),
+                                  Colors.white.withOpacity(0.08),
+                                  Colors.white.withOpacity(0.04),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
@@ -597,7 +1062,7 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        top: MediaQuery.of(context).padding.top + 80,
+        top: MediaQuery.of(context).padding.top + 110, // Account for header + chip
         bottom: 220,
       ),
       itemCount: chatProvider.messages.length + (chatProvider.isLoading ? 1 : 0),
