@@ -798,20 +798,36 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
         ),
         
-        // Achievements horizontal scroll with images
+        // Achievements horizontal scroll with images - extends to screen edges
         SizedBox(
-          height: 180,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: achievements.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final achievement = achievements[index];
-              return _buildAchievementCard(
-                achievement['image'] as String,
-                achievement['name'] as String,
-                achievement['unlocked'] as bool,
-                achievement['description'] as String,
+          height: 220,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              return OverflowBox(
+                maxWidth: screenWidth,
+                alignment: Alignment.centerLeft,
+                child: Transform.translate(
+                  offset: const Offset(-16, 0),
+                  child: SizedBox(
+                    width: screenWidth,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: achievements.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final achievement = achievements[index];
+                        return _buildAchievementCard(
+                          achievement['image'] as String,
+                          achievement['name'] as String,
+                          achievement['unlocked'] as bool,
+                          achievement['description'] as String,
+                        );
+                      },
+                    ),
+                  ),
+                ),
               );
             },
           ),
@@ -827,8 +843,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         _showAchievementDetails(imagePath, name, unlocked, description);
       },
       child: SizedBox(
-        width: 130,
-        height: 180,
+        width: 160,
+        height: 220,
         child: Stack(
           children: [
             // Card image
@@ -843,8 +859,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ]),
               child: Image.asset(
                 imagePath,
-                width: 130,
-                height: 180,
+                width: 160,
+                height: 220,
                 fit: BoxFit.contain,
               ),
             ),
