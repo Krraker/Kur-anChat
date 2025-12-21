@@ -1,43 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import '../../services/revenuecat_service.dart';
+import '../../services/subscription_service.dart';
 
 // =============================================================================
-// PRO PAYWALL SCREEN - Production-Ready RevenueCat Implementation
+// PRO PAYWALL SCREEN
 // =============================================================================
 // 
-// Clean, production-ready paywall for Kur'anChat Pro subscriptions.
+// A clean, production-ready paywall for Kur'anChat Pro subscriptions.
 // 
-// RevenueCat Configuration:
-// - Offering: default
-// - Entitlement: KuranChat_Pro
-// - Packages: $rc_weekly, $rc_monthly, $rc_annual
-// - Products: kuranchat_pro_weekly, kuranchat_pro_monthly, kuranchat_pro_yearly
-// 
-// UI Order (as required):
-// 1. Yearly (recommended / best value) - marked with "BEST VALUE" badge
-// 2. Monthly
-// 3. Weekly
-//
-// IMPORTANT:
-// - Uses RevenueCatService singleton (configured once in main.dart)
-// - NEVER calls Purchases.configure() - that's done at app startup
-// - Uses listener-based updates for reactive Pro status
+// Features:
+// - Displays weekly, monthly, yearly packages
+// - Highlights best value (yearly)
+// - Shows savings percentage
+// - Purchase and restore buttons
+// - Loading states and error handling
+// - Turkish localization
 //
 // Usage:
 // ```dart
-// // Option 1: Push as full screen
 // Navigator.push(context, MaterialPageRoute(
 //   builder: (_) => ProPaywallScreen(
 //     onPurchaseSuccess: () => Navigator.pop(context),
 //   ),
 // ));
-//
-// // Option 2: Use helper function
-// final purchased = await showProPaywall(context);
-// if (purchased) {
-//   // User is now Pro - unlock premium features
-// }
 // ```
 // =============================================================================
 
@@ -66,17 +51,15 @@ class ProPaywallScreen extends StatefulWidget {
   State<ProPaywallScreen> createState() => _ProPaywallScreenState();
 }
 
-class _ProPaywallScreenState extends State<ProPaywallScreen> 
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _animationController;
-  late final Animation<double> _fadeAnimation;
+class _ProPaywallScreenState extends State<ProPaywallScreen> {
+  final _subscriptionService = SubscriptionService();
   
   bool _isLoading = true;
   bool _isPurchasing = false;
   String? _error;
   Package? _selectedPackage;
   
-  // Packages - displayed in order: Yearly, Monthly, Weekly
+  // Packages
   Package? _weeklyPackage;
   Package? _monthlyPackage;
   Package? _yearlyPackage;
@@ -84,27 +67,9 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
   @override
   void initState() {
     super.initState();
-    
-    // Setup fade animation for content
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    );
-    
     _loadPackages();
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  /// Load offerings from RevenueCat's default offering
   Future<void> _loadPackages() async {
     setState(() {
       _isLoading = true;
@@ -112,21 +77,22 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
     });
 
     try {
-      // Get packages from RevenueCat service (already configured in main.dart)
-      _weeklyPackage = await RevenueCatService.I.getWeeklyPackage();
-      _monthlyPackage = await RevenueCatService.I.getMonthlyPackage();
-      _yearlyPackage = await RevenueCatService.I.getYearlyPackage();
+      // Load offerings if not already loaded
+      if (_subscriptionService.packages.isEmpty) {
+        await _subscriptionService.loadOfferings();
+      }
       
-      // Default selection: yearly (best value / recommended)
+      // Get packages
+      _weeklyPackage = _subscriptionService.weeklyPackage;
+      _monthlyPackage = _subscriptionService.monthlyPackage;
+      _yearlyPackage = _subscriptionService.yearlyPackage;
+      
+      // Default selection: yearly (best value)
       _selectedPackage = _yearlyPackage ?? _monthlyPackage ?? _weeklyPackage;
       
       setState(() => _isLoading = false);
       
-      // Start fade animation
-      _animationController.forward();
-      
     } catch (e) {
-      debugPrint('ProPaywallScreen: Error loading packages: $e');
       setState(() {
         _isLoading = false;
         _error = widget.turkish 
@@ -136,7 +102,6 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
     }
   }
 
-  /// Handle purchase flow for selected package
   Future<void> _purchase() async {
     if (_selectedPackage == null || _isPurchasing) return;
     
@@ -145,47 +110,31 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
       _error = null;
     });
 
-    try {
-      final result = await RevenueCatService.I.buyPackage(_selectedPackage!);
-      
-      if (!mounted) return;
-      
-      setState(() => _isPurchasing = false);
-      
-      switch (result) {
-        case PurchaseSuccess():
-          debugPrint('✅ Purchase successful - KuranChat_Pro entitlement active');
-          _showSuccessMessage();
-          widget.onPurchaseSuccess?.call();
-          break;
-          
-        case PurchaseCancelled():
-          debugPrint('ℹ️ Purchase cancelled by user');
-          break;
-          
-        case PurchaseFailed(:final error):
-          setState(() {
-            _error = error ?? 
-                (widget.turkish 
-                    ? 'Satın alma başarısız. Lütfen tekrar deneyin.'
-                    : 'Purchase failed. Please try again.');
-          });
-          break;
-      }
-    } catch (e) {
-      if (!mounted) return;
-      
-      setState(() {
-        _isPurchasing = false;
-        _error = widget.turkish 
-            ? 'Bir hata oluştu. Lütfen tekrar deneyin.'
-            : 'An error occurred. Please try again.';
-      });
-      debugPrint('❌ Purchase exception: $e');
+    final result = await _subscriptionService.purchase(_selectedPackage!);
+    
+    if (!mounted) return;
+    
+    setState(() => _isPurchasing = false);
+    
+    switch (result) {
+      case PurchaseResultType.success:
+        _showSuccessMessage();
+        widget.onPurchaseSuccess?.call();
+        break;
+      case PurchaseResultType.cancelled:
+        // User cancelled - no action needed
+        break;
+      case PurchaseResultType.failed:
+        setState(() {
+          _error = _subscriptionService.error ?? 
+              (widget.turkish 
+                  ? 'Satın alma başarısız. Lütfen tekrar deneyin.'
+                  : 'Purchase failed. Please try again.');
+        });
+        break;
     }
   }
 
-  /// Restore purchases
   Future<void> _restore() async {
     if (_isPurchasing) return;
     
@@ -194,49 +143,22 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
       _error = null;
     });
 
-    try {
-      final result = await RevenueCatService.I.restore();
-      
-      if (!mounted) return;
-      
-      setState(() => _isPurchasing = false);
-      
-      switch (result) {
-        case RestoreSuccess(:final isPro):
-          if (isPro) {
-            debugPrint('✅ Restore successful - KuranChat_Pro entitlement restored');
-            _showSuccessMessage();
-            widget.onPurchaseSuccess?.call();
-          } else {
-            debugPrint('ℹ️ Restore completed - No active subscription found');
-            _showMessage(
-              widget.turkish 
-                  ? 'Aktif abonelik bulunamadı'
-                  : 'No active subscription found',
-              isError: false,
-            );
-          }
-          break;
-          
-        case RestoreFailed(:final error):
-          setState(() {
-            _error = error ?? 
-                (widget.turkish 
-                    ? 'Geri yükleme başarısız. Lütfen tekrar deneyin.'
-                    : 'Restore failed. Please try again.');
-          });
-          break;
-      }
-    } catch (e) {
-      if (!mounted) return;
-      
-      setState(() {
-        _isPurchasing = false;
-        _error = widget.turkish 
-            ? 'Geri yükleme başarısız. Lütfen tekrar deneyin.'
-            : 'Restore failed. Please try again.';
-      });
-      debugPrint('❌ Restore exception: $e');
+    final restored = await _subscriptionService.restore();
+    
+    if (!mounted) return;
+    
+    setState(() => _isPurchasing = false);
+    
+    if (restored) {
+      _showSuccessMessage();
+      widget.onPurchaseSuccess?.call();
+    } else {
+      _showMessage(
+        widget.turkish 
+            ? 'Aktif abonelik bulunamadı'
+            : 'No active subscription found',
+        isError: false,
+      );
     }
   }
 
@@ -257,18 +179,6 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
         backgroundColor: isError ? Colors.red : const Color(0xFF00A86B),
       ),
     );
-  }
-  
-  /// Calculate yearly savings percentage
-  int? get _yearlySavingsPercent {
-    if (_monthlyPackage == null || _yearlyPackage == null) return null;
-    
-    final monthlyYearCost = _monthlyPackage!.storeProduct.price * 12;
-    final yearlyCost = _yearlyPackage!.storeProduct.price;
-    
-    if (monthlyYearCost <= 0) return null;
-    
-    return (((monthlyYearCost - yearlyCost) / monthlyYearCost) * 100).round();
   }
 
   @override
@@ -337,16 +247,14 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
   }
 
   Widget _buildContent() {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            
-            // Pro icon with glow effect
-            Container(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          
+          // Pro icon
+          Container(
             width: 80,
             height: 80,
             decoration: BoxDecoration(
@@ -433,7 +341,6 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
           
           const SizedBox(height: 32),
         ],
-        ),
       ),
     );
   }
@@ -529,7 +436,7 @@ class _ProPaywallScreenState extends State<ProPaywallScreen>
     if (_yearlyPackage == null) return '';
     
     final price = _yearlyPackage!.storeProduct.priceString;
-    final savings = _yearlySavingsPercent;
+    final savings = _subscriptionService.yearlySavingsPercent;
     
     if (savings != null && savings > 0) {
       return widget.turkish 

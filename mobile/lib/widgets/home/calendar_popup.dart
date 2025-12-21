@@ -10,24 +10,23 @@ class CalendarPopup extends StatefulWidget {
       barrierDismissible: true,
       barrierLabel: 'Calendar',
       barrierColor: Colors.black.withOpacity(0.5),
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         return const CalendarPopup();
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        // Glass-like reveal with eased opacity
-        final opacityAnimation = CurvedAnimation(
+        final curvedAnimation = CurvedAnimation(
           parent: animation,
-          curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
         );
-        final scaleAnimation = CurvedAnimation(
-          parent: animation,
-          curve: const Interval(0.0, 1.0, curve: Curves.easeOutBack),
-        );
-        return FadeTransition(
-          opacity: opacityAnimation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.95, end: 1.0).animate(scaleAnimation),
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, -0.1),
+            end: Offset.zero,
+          ).animate(curvedAnimation),
+          child: FadeTransition(
+            opacity: curvedAnimation,
             child: child,
           ),
         );

@@ -3,17 +3,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../styles/styles.dart';
-import '../../services/daily_content_service.dart';
 import '../share_story_modal.dart';
 
-/// Daily content manager - fetches from API with fallback to hardcoded data
+/// Daily content with rotation based on day of year
 class DailyContent {
-  static final DailyContentService _service = DailyContentService();
-  static DailyContentResponse? _cachedContent;
-  static DateTime? _cacheDate;
-  
-  // Fallback verses (used when API is unavailable)
-  static const List<Map<String, dynamic>> _fallbackVerses = [
+  // Verses collection - rotates daily
+  static const List<Map<String, dynamic>> _verses = [
     {
       'surah': 'Al-Baqarah',
       'surahTr': 'Bakara Suresi',
@@ -38,352 +33,91 @@ class DailyContent {
       'meaning': 'Biliniz ki, kalpler ancak Allah\'ı anmakla huzur bulur.',
       'tafsir': 'Kalplerin gerçek huzuru ancak Allah\'ı zikretmekle mümkündür.',
     },
+    {
+      'surah': 'Al-Baqarah',
+      'surahTr': 'Bakara Suresi',
+      'ayah': 153,
+      'arabic': 'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',
+      'meaning': 'Şüphesiz Allah sabredenlerle beraberdir.',
+      'tafsir': 'Sabır, müminin en güçlü silahıdır ve Allah sabredenlere yardım eder.',
+    },
+    {
+      'surah': 'Al-Baqarah',
+      'surahTr': 'Bakara Suresi',
+      'ayah': 186,
+      'arabic': 'أُجِيبُ دَعْوَةَ الدَّاعِ إِذَا دَعَانِ',
+      'meaning': 'Bana dua edince, dua edenin duasına karşılık veririm.',
+      'tafsir': 'Allah kullarına çok yakındır ve dualarını kabul eder.',
+    },
+    {
+      'surah': 'Al-Ankabut',
+      'surahTr': 'Ankebût Suresi',
+      'ayah': 45,
+      'arabic': 'إِنَّ الصَّلَاةَ تَنْهَىٰ عَنِ الْفَحْشَاءِ وَالْمُنكَرِ',
+      'meaning': 'Şüphesiz namaz, insanı çirkin işlerden ve kötülükten alıkoyar.',
+      'tafsir': 'Namaz, insanı kötülüklerden koruyan manevi bir kalkan gibidir.',
+    },
+    {
+      'surah': 'Az-Zumar',
+      'surahTr': 'Zümer Suresi',
+      'ayah': 53,
+      'arabic': 'لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ ۚ إِنَّ اللَّهَ يَغْفِرُ الذُّنُوبَ جَمِيعًا',
+      'meaning': 'Allah\'ın rahmetinden ümit kesmeyin. Çünkü Allah bütün günahları bağışlar.',
+      'tafsir': 'Allah\'ın rahmeti sonsuzdur ve tövbe edenleri bağışlar.',
+    },
   ];
 
-  // Complete collection of Quranic duas (Rabbana & Rabbi prayers)
-  static const List<Map<String, String>> _fallbackPrayers = [
-    // Surah Al-Fatiha
-    {
-      'arabic': 'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ',
-      'meaning': 'Bizi doğru yola ilet.',
-    },
-    // Surah Al-Baqarah
-    {
-      'arabic': 'رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنتَ السَّمِيعُ الْعَلِيمُ',
-      'meaning': 'Rabbimiz! Bizden kabul buyur. Şüphesiz sen işitensin, bilensin.',
-    },
-    {
-      'arabic': 'رَبَّنَا وَاجْعَلْنَا مُسْلِمَيْنِ لَكَ وَمِن ذُرِّيَّتِنَا أُمَّةً مُّسْلِمَةً لَّكَ',
-      'meaning': 'Rabbimiz! Bizi sana teslim olanlardan kıl, soyumuzdan da sana teslim olan bir ümmet çıkar.',
-    },
+  // Get verse of the day (rotates based on day of year)
+  static Map<String, dynamic> get verseOfDay {
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    return _verses[dayOfYear % _verses.length];
+  }
+
+  static const List<Map<String, String>> prayers = [
     {
       'arabic': 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
       'meaning': 'Rabbimiz! Bize dünyada iyilik ver, ahirette de iyilik ver ve bizi ateş azabından koru.',
     },
     {
-      'arabic': 'رَبَّنَا أَفْرِغْ عَلَيْنَا صَبْرًا وَثَبِّتْ أَقْدَامَنَا وَانصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ',
-      'meaning': 'Rabbimiz! Üzerimize sabır yağdır, ayaklarımızı sabit kıl ve inkarcı topluluğa karşı bize yardım et.',
-    },
-    {
-      'arabic': 'رَبَّنَا لَا تُؤَاخِذْنَا إِن نَّسِينَا أَوْ أَخْطَأْنَا',
-      'meaning': 'Rabbimiz! Unutursak veya yanılırsak bizi sorumlu tutma.',
-    },
-    {
-      'arabic': 'رَبَّنَا وَلَا تَحْمِلْ عَلَيْنَا إِصْرًا كَمَا حَمَلْتَهُ عَلَى الَّذِينَ مِن قَبْلِنَا',
-      'meaning': 'Rabbimiz! Bizden öncekilere yüklediğin gibi bize ağır yük yükleme.',
-    },
-    {
-      'arabic': 'رَبَّنَا وَلَا تُحَمِّلْنَا مَا لَا طَاقَةَ لَنَا بِهِ وَاعْفُ عَنَّا وَاغْفِرْ لَنَا وَارْحَمْنَا',
-      'meaning': 'Rabbimiz! Gücümüzün yetmediğini bize yükleme. Bizi affet, bağışla ve bize merhamet et.',
-    },
-    // Surah Al-Imran
-    {
-      'arabic': 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِن لَّدُنكَ رَحْمَةً',
-      'meaning': 'Rabbimiz! Bizi doğru yola ilettikten sonra kalplerimizi eğriltme, bize katından rahmet ver.',
-    },
-    {
-      'arabic': 'رَبَّنَا إِنَّكَ جَامِعُ النَّاسِ لِيَوْمٍ لَّا رَيْبَ فِيهِ إِنَّ اللَّهَ لَا يُخْلِفُ الْمِيعَادَ',
-      'meaning': 'Rabbimiz! Sen insanları, geleceğinde şüphe olmayan bir günde toplayacaksın. Allah vaadinden dönmez.',
-    },
-    {
-      'arabic': 'رَبَّنَا إِنَّنَا آمَنَّا فَاغْفِرْ لَنَا ذُنُوبَنَا وَقِنَا عَذَابَ النَّارِ',
-      'meaning': 'Rabbimiz! Biz iman ettik, günahlarımızı bağışla ve bizi ateş azabından koru.',
-    },
-    {
-      'arabic': 'رَبَّنَا آمَنَّا بِمَا أَنزَلْتَ وَاتَّبَعْنَا الرَّسُولَ فَاكْتُبْنَا مَعَ الشَّاهِدِينَ',
-      'meaning': 'Rabbimiz! İndirdiğine iman ettik ve Peygambere uyduk. Bizi şahitlerle beraber yaz.',
-    },
-    {
-      'arabic': 'رَبَّنَا اغْفِرْ لَنَا ذُنُوبَنَا وَإِسْرَافَنَا فِي أَمْرِنَا وَثَبِّتْ أَقْدَامَنَا وَانصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ',
-      'meaning': 'Rabbimiz! Günahlarımızı ve işlerimizdeki taşkınlıklarımızı bağışla, ayaklarımızı sabit kıl.',
-    },
-    {
-      'arabic': 'رَبَّنَا مَا خَلَقْتَ هَٰذَا بَاطِلًا سُبْحَانَكَ فَقِنَا عَذَابَ النَّارِ',
-      'meaning': 'Rabbimiz! Bunları boşuna yaratmadın, seni tenzih ederiz. Bizi ateş azabından koru.',
-    },
-    {
-      'arabic': 'رَبَّنَا إِنَّكَ مَن تُدْخِلِ النَّارَ فَقَدْ أَخْزَيْتَهُ',
-      'meaning': 'Rabbimiz! Sen kimi ateşe sokarsan onu rezil etmişsindir.',
-    },
-    {
-      'arabic': 'رَبَّنَا إِنَّنَا سَمِعْنَا مُنَادِيًا يُنَادِي لِلْإِيمَانِ أَنْ آمِنُوا بِرَبِّكُمْ فَآمَنَّا',
-      'meaning': 'Rabbimiz! "Rabbinize iman edin" diye çağıran bir davetçi işittik ve iman ettik.',
-    },
-    {
-      'arabic': 'رَبَّنَا فَاغْفِرْ لَنَا ذُنُوبَنَا وَكَفِّرْ عَنَّا سَيِّئَاتِنَا وَتَوَفَّنَا مَعَ الْأَبْرَارِ',
-      'meaning': 'Rabbimiz! Günahlarımızı bağışla, kötülüklerimizi ört ve iyilerle beraber canımızı al.',
-    },
-    {
-      'arabic': 'رَبَّنَا وَآتِنَا مَا وَعَدتَّنَا عَلَىٰ رُسُلِكَ وَلَا تُخْزِنَا يَوْمَ الْقِيَامَةِ',
-      'meaning': 'Rabbimiz! Peygamberlerin aracılığıyla bize vaat ettiklerini ver, kıyamet günü bizi rezil etme.',
-    },
-    // Surah An-Nisa
-    {
-      'arabic': 'رَبَّنَا ظَلَمْنَا أَنفُسَنَا وَإِن لَّمْ تَغْفِرْ لَنَا وَتَرْحَمْنَا لَنَكُونَنَّ مِنَ الْخَاسِرِينَ',
-      'meaning': 'Rabbimiz! Kendimize zulmettik. Bizi bağışlamaz ve bize merhamet etmezsen hüsrana uğrayanlardan oluruz.',
-    },
-    // Surah Al-Maidah
-    {
-      'arabic': 'رَبَّنَا آمَنَّا فَاكْتُبْنَا مَعَ الشَّاهِدِينَ',
-      'meaning': 'Rabbimiz! İman ettik, bizi şahitlerden yaz.',
-    },
-    // Surah Al-Araf
-    {
-      'arabic': 'رَبَّنَا أَفْرِغْ عَلَيْنَا صَبْرًا وَتَوَفَّنَا مُسْلِمِينَ',
-      'meaning': 'Rabbimiz! Üzerimize sabır yağdır ve bizi Müslüman olarak öldür.',
-    },
-    // Surah Yunus
-    {
-      'arabic': 'رَبَّنَا لَا تَجْعَلْنَا فِتْنَةً لِّلْقَوْمِ الظَّالِمِينَ وَنَجِّنَا بِرَحْمَتِكَ مِنَ الْقَوْمِ الْكَافِرِينَ',
-      'meaning': 'Rabbimiz! Bizi zalimler için fitne kılma ve rahmetinle bizi inkarcılardan kurtar.',
-    },
-    // Surah Hud
-    {
-      'arabic': 'رَبِّ إِنِّي أَعُوذُ بِكَ أَنْ أَسْأَلَكَ مَا لَيْسَ لِي بِهِ عِلْمٌ',
-      'meaning': 'Rabbim! Hakkında bilgim olmayan şeyi senden istemekten sana sığınırım.',
-    },
-    // Surah Yusuf
-    {
-      'arabic': 'رَبِّ قَدْ آتَيْتَنِي مِنَ الْمُلْكِ وَعَلَّمْتَنِي مِن تَأْوِيلِ الْأَحَادِيثِ',
-      'meaning': 'Rabbim! Bana mülkten verdin ve rüyaların yorumunu öğrettin.',
-    },
-    {
-      'arabic': 'فَاطِرَ السَّمَاوَاتِ وَالْأَرْضِ أَنتَ وَلِيِّي فِي الدُّنْيَا وَالْآخِرَةِ تَوَفَّنِي مُسْلِمًا وَأَلْحِقْنِي بِالصَّالِحِينَ',
-      'meaning': 'Göklerin ve yerin yaratıcısı! Sen dünya ve ahirette benim velimsin. Canımı Müslüman olarak al ve beni salihler arasına kat.',
-    },
-    // Surah Ibrahim
-    {
-      'arabic': 'رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِن ذُرِّيَّتِي رَبَّنَا وَتَقَبَّلْ دُعَاءِ',
-      'meaning': 'Rabbim! Beni ve neslimi namazı dosdoğru kılanlardan eyle. Rabbimiz, duamı kabul et.',
-    },
-    {
-      'arabic': 'رَبَّنَا اغْفِرْ لِي وَلِوَالِدَيَّ وَلِلْمُؤْمِنِينَ يَوْمَ يَقُومُ الْحِسَابُ',
-      'meaning': 'Rabbimiz! Hesap gününde beni, anne babamı ve müminleri bağışla.',
-    },
-    // Surah Al-Isra
-    {
-      'arabic': 'رَّبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا',
-      'meaning': 'Rabbim! Onlar beni küçükken nasıl yetiştirdilerse, sen de onlara öyle merhamet et.',
-    },
-    {
-      'arabic': 'رَّبِّ أَدْخِلْنِي مُدْخَلَ صِدْقٍ وَأَخْرِجْنِي مُخْرَجَ صِدْقٍ وَاجْعَل لِّي مِن لَّدُنكَ سُلْطَانًا نَّصِيرًا',
-      'meaning': 'Rabbim! Beni doğruluk girişiyle girdir, doğruluk çıkışıyla çıkar ve katından yardımcı bir güç ver.',
-    },
-    // Surah Al-Kahf
-    {
-      'arabic': 'رَبَّنَا آتِنَا مِن لَّدُنكَ رَحْمَةً وَهَيِّئْ لَنَا مِنْ أَمْرِنَا رَشَدًا',
-      'meaning': 'Rabbimiz! Bize katından rahmet ver ve işimizde bize doğruyu kolaylaştır.',
-    },
-    // Surah Maryam
-    {
-      'arabic': 'رَبِّ إِنِّي وَهَنَ الْعَظْمُ مِنِّي وَاشْتَعَلَ الرَّأْسُ شَيْبًا وَلَمْ أَكُن بِدُعَائِكَ رَبِّ شَقِيًّا',
-      'meaning': 'Rabbim! Kemiklerim gevşedi, başım ağardı. Rabbim, sana dua etmekle hiç bedbaht olmadım.',
-    },
-    // Surah Taha
-    {
       'arabic': 'رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي',
       'meaning': 'Rabbim! Göğsümü aç, işimi kolaylaştır.',
     },
     {
-      'arabic': 'رَبِّ زِدْنِي عِلْمًا',
-      'meaning': 'Rabbim! İlmimi artır.',
+      'arabic': 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا',
+      'meaning': 'Rabbimiz! Bizi doğru yola ilettikten sonra kalplerimizi eğriltme.',
     },
-    // Surah Al-Anbiya
-    {
-      'arabic': 'لَا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ الظَّالِمِينَ',
-      'meaning': 'Senden başka ilah yoktur, seni tenzih ederim. Ben gerçekten zalimlerden oldum.',
-    },
-    {
-      'arabic': 'رَبِّ لَا تَذَرْنِي فَرْدًا وَأَنتَ خَيْرُ الْوَارِثِينَ',
-      'meaning': 'Rabbim! Beni yalnız bırakma, sen varislerin en hayırlısısın.',
-    },
-    // Surah Al-Muminun
-    {
-      'arabic': 'رَّبِّ اغْفِرْ وَارْحَمْ وَأَنتَ خَيْرُ الرَّاحِمِينَ',
-      'meaning': 'Rabbim! Bağışla ve merhamet et. Sen merhametlilerin en hayırlısısın.',
-    },
-    {
-      'arabic': 'رَبِّ أَعُوذُ بِكَ مِنْ هَمَزَاتِ الشَّيَاطِينِ وَأَعُوذُ بِكَ رَبِّ أَن يَحْضُرُونِ',
-      'meaning': 'Rabbim! Şeytanların vesveselerinden sana sığınırım. Yanımda bulunmalarından da sana sığınırım.',
-    },
-    // Surah Al-Furqan
-    {
-      'arabic': 'رَبَّنَا اصْرِفْ عَنَّا عَذَابَ جَهَنَّمَ إِنَّ عَذَابَهَا كَانَ غَرَامًا',
-      'meaning': 'Rabbimiz! Cehennem azabını bizden uzaklaştır, onun azabı sürekli bir helaktir.',
-    },
-    {
-      'arabic': 'رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا',
-      'meaning': 'Rabbimiz! Eşlerimizi ve çocuklarımızı bize göz aydınlığı kıl ve bizi takva sahiplerine önder yap.',
-    },
-    // Surah Ash-Shu'ara
-    {
-      'arabic': 'رَبِّ هَبْ لِي حُكْمًا وَأَلْحِقْنِي بِالصَّالِحِينَ',
-      'meaning': 'Rabbim! Bana hikmet ver ve beni salihler arasına kat.',
-    },
-    {
-      'arabic': 'وَاجْعَل لِّي لِسَانَ صِدْقٍ فِي الْآخِرِينَ',
-      'meaning': 'Sonrakiler arasında beni güzel bir dille anılanlardan kıl.',
-    },
-    {
-      'arabic': 'وَاجْعَلْنِي مِن وَرَثَةِ جَنَّةِ النَّعِيمِ',
-      'meaning': 'Beni nimet cennetinin varislerinden kıl.',
-    },
-    {
-      'arabic': 'وَلَا تُخْزِنِي يَوْمَ يُبْعَثُونَ',
-      'meaning': 'İnsanların diriltileceği gün beni rezil etme.',
-    },
-    // Surah An-Naml
-    {
-      'arabic': 'رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ الَّتِي أَنْعَمْتَ عَلَيَّ وَعَلَىٰ وَالِدَيَّ',
-      'meaning': 'Rabbim! Bana ve anne babama verdiğin nimetlere şükretmemi ilham et.',
-    },
-    // Surah Al-Qasas
-    {
-      'arabic': 'رَبِّ إِنِّي لِمَا أَنزَلْتَ إِلَيَّ مِنْ خَيْرٍ فَقِيرٌ',
-      'meaning': 'Rabbim! Bana indireceğin her hayra muhtacım.',
-    },
-    {
-      'arabic': 'رَبِّ نَجِّنِي مِنَ الْقَوْمِ الظَّالِمِينَ',
-      'meaning': 'Rabbim! Beni zalimler topluluğundan kurtar.',
-    },
-    // Surah Al-Ankabut
-    {
-      'arabic': 'رَبِّ انصُرْنِي عَلَى الْقَوْمِ الْمُفْسِدِينَ',
-      'meaning': 'Rabbim! Bozguncu topluluğa karşı bana yardım et.',
-    },
-    // Surah Ghafir (Al-Mu'min)
-    {
-      'arabic': 'رَبَّنَا وَسِعْتَ كُلَّ شَيْءٍ رَّحْمَةً وَعِلْمًا فَاغْفِرْ لِلَّذِينَ تَابُوا وَاتَّبَعُوا سَبِيلَكَ',
-      'meaning': 'Rabbimiz! Her şeyi rahmet ve ilimle kuşattın. Tövbe edip senin yoluna uyanları bağışla.',
-    },
-    {
-      'arabic': 'رَبَّنَا وَأَدْخِلْهُمْ جَنَّاتِ عَدْنٍ الَّتِي وَعَدتَّهُمْ',
-      'meaning': 'Rabbimiz! Onları vaat ettiğin Adn cennetlerine koy.',
-    },
-    // Surah Az-Zukhruf
-    {
-      'arabic': 'رَبِّ إِمَّا تُرِيَنِّي مَا يُوعَدُونَ رَبِّ فَلَا تَجْعَلْنِي فِي الْقَوْمِ الظَّالِمِينَ',
-      'meaning': 'Rabbim! Eğer onlara vaat edileni bana göstereceksen, beni zalimler arasına katma.',
-    },
-    // Surah Al-Ahqaf
-    {
-      'arabic': 'رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ الَّتِي أَنْعَمْتَ عَلَيَّ وَعَلَىٰ وَالِدَيَّ وَأَنْ أَعْمَلَ صَالِحًا تَرْضَاهُ',
-      'meaning': 'Rabbim! Bana ve anne babama verdiğin nimetlere şükretmemi ve razı olacağın salih amel işlememi ilham et.',
-    },
-    // Surah Al-Hashr
-    {
-      'arabic': 'رَبَّنَا اغْفِرْ لَنَا وَلِإِخْوَانِنَا الَّذِينَ سَبَقُونَا بِالْإِيمَانِ وَلَا تَجْعَلْ فِي قُلُوبِنَا غِلًّا لِّلَّذِينَ آمَنُوا',
-      'meaning': 'Rabbimiz! Bizi ve bizden önce iman eden kardeşlerimizi bağışla, kalplerimizde müminlere karşı kin bırakma.',
-    },
-    // Surah Al-Mumtahanah
-    {
-      'arabic': 'رَبَّنَا عَلَيْكَ تَوَكَّلْنَا وَإِلَيْكَ أَنَبْنَا وَإِلَيْكَ الْمَصِيرُ',
-      'meaning': 'Rabbimiz! Sana tevekkül ettik, sana yöneldik ve dönüş sanadır.',
-    },
-    {
-      'arabic': 'رَبَّنَا لَا تَجْعَلْنَا فِتْنَةً لِّلَّذِينَ كَفَرُوا وَاغْفِرْ لَنَا رَبَّنَا إِنَّكَ أَنتَ الْعَزِيزُ الْحَكِيمُ',
-      'meaning': 'Rabbimiz! Bizi inkarcılar için fitne kılma ve bizi bağışla. Sen Aziz ve Hakimsin.',
-    },
-    // Surah At-Tahrim
-    {
-      'arabic': 'رَبَّنَا أَتْمِمْ لَنَا نُورَنَا وَاغْفِرْ لَنَا إِنَّكَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
-      'meaning': 'Rabbimiz! Nurumuzu tamamla ve bizi bağışla. Şüphesiz sen her şeye kadirsin.',
-    },
-    // Surah Nuh
-    {
-      'arabic': 'رَّبِّ اغْفِرْ لِي وَلِوَالِدَيَّ وَلِمَن دَخَلَ بَيْتِيَ مُؤْمِنًا وَلِلْمُؤْمِنِينَ وَالْمُؤْمِنَاتِ',
-      'meaning': 'Rabbim! Beni, anne babamı, evime mümin olarak gireni ve tüm mümin erkek ve kadınları bağışla.',
-    },
-    // Other essential duas
     {
       'arabic': 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',
       'meaning': 'Allah bize yeter. O ne güzel vekildir!',
     },
     {
-      'arabic': 'حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ',
-      'meaning': 'Allah bana yeter. Ondan başka ilah yoktur. Ona tevekkül ettim. O büyük Arşın Rabbidir.',
+      'arabic': 'رَبِّ زِدْنِي عِلْمًا',
+      'meaning': 'Rabbim! İlmimi artır.',
+    },
+    {
+      'arabic': 'لَّا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ الظَّالِمِينَ',
+      'meaning': 'Senden başka ilâh yoktur. Seni tenzih ederim. Gerçekten ben zalimlerden oldum.',
+    },
+
+    {
+      'arabic': 'رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِن ذُرِّيَّتِي',
+      'meaning': 'Rabbim! Beni ve soyumdan gelecekleri namazı dosdoğru kılanlardan eyle.',
+    },
+    {
+      'arabic': 'رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ',
+      'meaning': 'Rabbimiz! Bize eşlerimizden ve çocuklarımızdan göz aydınlığı olacak kimseler bağışla.',
     },
   ];
 
-  /// Fetch daily content from API (with caching)
-  static Future<void> fetchDailyContent() async {
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-    
-    // Return cached content if it's from today
-    if (_cachedContent != null && _cacheDate == todayDate) {
-      return;
-    }
-    
-    try {
-      _cachedContent = await _service.getDailyContent();
-      _cacheDate = todayDate;
-    } catch (e) {
-      debugPrint('Failed to fetch daily content: $e');
-      // Will use fallback data
-    }
-  }
-
-  /// Get verse of the day (from API or fallback)
-  static Map<String, dynamic> get verseOfDay {
-    if (_cachedContent != null) {
-      final verse = _cachedContent!.verseOfDay;
-      return {
-        'surah': verse.surahName,
-        'surahTr': '${verse.surahName} Suresi',
-        'ayah': verse.ayah,
-        'arabic': verse.arabic,
-        'meaning': verse.turkish,
-        'tafsir': _cachedContent!.tafsir?.commentary ?? 
-                  'Bu ayet, Allah\'ın kullarına olan merhametini gösterir.',
-      };
-    }
-    
-    // Fallback: rotate based on day of year
-    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
-    return _fallbackVerses[dayOfYear % _fallbackVerses.length];
-  }
-  
-  /// Get tafsir data (from API or fallback)
-  static Map<String, dynamic>? get tafsirOfDay {
-    if (_cachedContent?.tafsir != null) {
-      final tafsir = _cachedContent!.tafsir!;
-      return {
-        'surahTr': '${tafsir.surahName} Suresi',
-        'arabic': tafsir.arabic,
-        'meaning': tafsir.turkish,
-        'tafsir': tafsir.commentary ?? 'Bu ayet üzerine tefekkür ediniz.',
-      };
-    }
-    return verseOfDay; // Use verse of day as fallback
-  }
-
-  /// Get prayer of the day (from API or fallback)
-  static Map<String, String> get prayerOfDay {
-    if (_cachedContent != null) {
-      final prayer = _cachedContent!.prayer;
-      return {
-        'arabic': prayer.arabic,
-        'meaning': prayer.turkish,
-        'source': prayer.source ?? '',
-      };
-    }
-    
-    // Fallback: rotate based on day of year
-    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
-    return _fallbackPrayers[dayOfYear % _fallbackPrayers.length];
-  }
-
-  /// Get a random prayer (for variety)
   static Map<String, String> getRandomPrayer() {
-    if (_cachedContent != null) {
-      return prayerOfDay;
-    }
-    return _fallbackPrayers[Random().nextInt(_fallbackPrayers.length)];
+    return prayers[Random().nextInt(prayers.length)];
   }
   
-  /// Legacy getter for backward compatibility
-  static List<Map<String, String>> get prayers => _fallbackPrayers;
+  // Get prayer of the day (rotates based on day of year)
+  static Map<String, String> get prayerOfDay {
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    return prayers[dayOfYear % prayers.length];
+  }
 }
 
 /// Expandable card widget for daily journey activities
@@ -1472,3 +1206,4 @@ class DailyRewardCard extends StatelessWidget {
     );
   }
 }
+

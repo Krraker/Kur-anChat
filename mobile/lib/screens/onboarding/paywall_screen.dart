@@ -4,20 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../widgets/onboarding/continue_button.dart';
 import '../../styles/styles.dart';
-import '../../services/revenuecat_service.dart';
-
-// =============================================================================
-// ONBOARDING PAYWALL SCREEN
-// =============================================================================
-//
-// Animated paywall shown during onboarding flow.
-// Uses RevenueCatService singleton (configured once in main.dart).
-//
-// IMPORTANT:
-// - NEVER calls Purchases.configure() - that's done at app startup
-// - Uses listener-based updates for reactive Pro status
-//
-// =============================================================================
+import '../../services/subscription_service.dart';
 
 class PaywallScreen extends StatefulWidget {
   final VoidCallback onContinue;
@@ -246,12 +233,16 @@ class _PaywallScreenState extends State<PaywallScreen>
   /// Load subscription packages from RevenueCat
   Future<void> _loadOfferings() async {
     try {
-      // Get packages from RevenueCat service (already configured in main.dart)
-      final packages = await RevenueCatService.I.getPackages();
+      final subscriptionService = SubscriptionService();
+      
+      // Load offerings if not already loaded
+      if (subscriptionService.packages.isEmpty) {
+        await subscriptionService.loadOfferings();
+      }
       
       if (mounted && !_isDisposed) {
         setState(() {
-          _packages = packages;
+          _packages = subscriptionService.packages;
           _isLoading = false;
         });
       }
@@ -295,23 +286,23 @@ class _PaywallScreenState extends State<PaywallScreen>
     });
 
     try {
-      final result = await RevenueCatService.I.buyPackage(selectedPackage);
+      final result = await SubscriptionService().purchase(selectedPackage);
       
       if (mounted && !_isDisposed) {
         setState(() => _isPurchasing = false);
         
         switch (result) {
-          case PurchaseSuccess():
+          case PurchaseResultType.success:
             _showSuccessAndContinue();
             break;
-          case PurchaseCancelled():
+          case PurchaseResultType.cancelled:
             // User cancelled - don't show error, just let them try again
             break;
-          case PurchaseFailed(:final error):
+          case PurchaseResultType.failed:
             setState(() {
-              _errorMessage = error ?? (isEnglish
+              _errorMessage = isEnglish
                   ? 'Purchase was not completed. Try again or skip.'
-                  : 'Satın alma tamamlanmadı. Tekrar deneyin veya atlayın.');
+                  : 'Satın alma tamamlanmadı. Tekrar deneyin veya atlayın.';
             });
             break;
         }
@@ -334,36 +325,22 @@ class _PaywallScreenState extends State<PaywallScreen>
     setState(() => _isPurchasing = true);
     
     try {
-      final result = await RevenueCatService.I.restore();
+      final restored = await SubscriptionService().restore();
       
       if (mounted && !_isDisposed) {
         setState(() => _isPurchasing = false);
         
-        switch (result) {
-          case RestoreSuccess(:final isPro):
-            if (isPro) {
-              _showSuccessAndContinue();
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isEnglish 
-                      ? 'No previous purchases found' 
-                      : 'Önceki satın alma bulunamadı'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            }
-            break;
-          case RestoreFailed(:final error):
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(error ?? (isEnglish 
-                    ? 'Restore failed' 
-                    : 'Geri yükleme başarısız')),
-                backgroundColor: Colors.red,
-              ),
-            );
-            break;
+        if (restored) {
+          _showSuccessAndContinue();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isEnglish 
+                  ? 'No previous purchases found' 
+                  : 'Önceki satın alma bulunamadı'),
+              backgroundColor: Colors.orange,
+            ),
+          );
         }
       }
     } catch (e) {
