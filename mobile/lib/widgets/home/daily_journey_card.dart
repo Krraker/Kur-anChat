@@ -728,8 +728,16 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                         fit: BoxFit.cover,
                       ),
                     ),
+                  // Background image for prayer/dua card
+                  if (widget.cardType == CardType.prayer)
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/daily_dua_bg_homepage.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   // Blur filter for cards without background images
-                  if (widget.cardType != CardType.verse && widget.cardType != CardType.tefsir)
+                  if (widget.cardType != CardType.verse && widget.cardType != CardType.tefsir && widget.cardType != CardType.prayer)
                     Positioned.fill(
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
@@ -740,7 +748,7 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      color: (widget.cardType == CardType.verse || widget.cardType == CardType.tefsir)
+                      color: (widget.cardType == CardType.verse || widget.cardType == CardType.tefsir || widget.cardType == CardType.prayer)
                           ? Colors.black.withOpacity(0.3)
                           : Colors.white.withOpacity(0.08),
                       border: Border.all(
@@ -749,7 +757,7 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                             : Colors.white.withOpacity(0.1),
                         width: 0.5,
                       ),
-                      gradient: (widget.cardType != CardType.verse && widget.cardType != CardType.tefsir)
+                      gradient: (widget.cardType != CardType.verse && widget.cardType != CardType.tefsir && widget.cardType != CardType.prayer)
                           ? LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -1115,42 +1123,31 @@ class DailyRewardCard extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: GlobalAppStyle.accentColor.withOpacity(0.15),
-                border: Border.all(
-                  color: GlobalAppStyle.accentColor.withOpacity(0.2),
-                  width: 0.5,
-                ),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    GlobalAppStyle.accentColor.withOpacity(0.2),
-                    GlobalAppStyle.accentColor.withOpacity(0.08),
-                    GlobalAppStyle.accentColor.withOpacity(0.04),
-                  ],
-                  stops: const [0.0, 0.4, 1.0],
+          child: Stack(
+            children: [
+              // Background image for reward card
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/daily_loot_bg_homepage.png',
+                  fit: BoxFit.cover,
                 ),
               ),
-              child: Stack(
-                children: [
-                  // Decorative crescent moon
-                  Positioned(
-                    right: 20,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: Icon(
-                        Icons.auto_awesome,
-                        size: 48,
-                        color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                      ),
+              // Dark overlay for readability
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.black.withOpacity(0.4),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 0.5,
                     ),
                   ),
+                ),
+              ),
+              // Content stack
+              Stack(
+                children: [
                   
                   // Content - centered vertically
                   Positioned.fill(
@@ -1199,7 +1196,7 @@ class DailyRewardCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
       ),

@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (!_eventExpandControllers.containsKey(index)) {
       final controller = AnimationController(
         vsync: this,
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 350),
       );
       _eventExpandControllers[index] = controller;
       _eventExpandAnimations[index] = CurvedAnimation(
@@ -696,8 +696,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           fontSize: 15,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           color: isSelected
-              ? GlobalAppStyle.accentColor
-              : Colors.white.withOpacity(0.5),
+              ? Colors.white
+              : Colors.white.withOpacity(0.4),
         ),
       ),
     );
@@ -720,7 +720,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
   
   Widget _buildAgendaContent() {
-    // Islamic calendar events - Holy days, holidays, and special occasions
+    // Islamic calendar events - Holy days, holidays, and special occasions for 2026
     final List<Map<String, dynamic>> upcomingEvents = [
       {
         'name': 'Cuma',
@@ -737,9 +737,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Regaip Kandili',
-        'subtitle': '1 Recep 1446',
+        'subtitle': '1 Recep 1447',
         'description': 'Recep ayının ilk cuması',
-        'eventDate': DateTime(2025, 1, 2),
+        'eventDate': DateTime(2025, 12, 26),
         'details': [
           'Kaza namazları kılma',
           'Tövbe ve istiğfar',
@@ -749,9 +749,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Miraç Kandili',
-        'subtitle': '27 Recep 1446',
+        'subtitle': '27 Recep 1447',
         'description': 'İsra ve Miraç gecesi',
-        'eventDate': DateTime(2025, 1, 28),
+        'eventDate': DateTime(2026, 1, 16),
         'details': [
           'Miraç hadisesini okuma',
           'Nafile namazlar kılma',
@@ -761,9 +761,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Berat Kandili',
-        'subtitle': '15 Şaban 1446',
+        'subtitle': '15 Şaban 1447',
         'description': 'Günahların affedildiği gece',
-        'eventDate': DateTime(2025, 2, 14),
+        'eventDate': DateTime(2026, 2, 1),
         'details': [
           'Tövbe ve istiğfar',
           'Geçmiş günahlar için af dileme',
@@ -773,9 +773,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Ramazan Başlangıcı',
-        'subtitle': '1 Ramazan 1446',
+        'subtitle': '1 Ramazan 1447',
         'description': 'Oruç ayının başlangıcı',
-        'eventDate': DateTime(2025, 3, 1),
+        'eventDate': DateTime(2026, 2, 17),
         'details': [
           'Sahura kalkmaya hazırlık',
           'Niyet etme',
@@ -785,9 +785,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Kadir Gecesi',
-        'subtitle': '27 Ramazan 1446',
+        'subtitle': '27 Ramazan 1447',
         'description': 'Bin aydan hayırlı gece',
-        'eventDate': DateTime(2025, 3, 27),
+        'eventDate': DateTime(2026, 3, 14),
         'details': [
           'Gece boyu ibadet',
           'Kuran okuma',
@@ -797,9 +797,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Ramazan Bayramı',
-        'subtitle': '1-3 Şevval 1446',
+        'subtitle': '1-3 Şevval 1447',
         'description': 'Fıtır Bayramı',
-        'eventDate': DateTime(2025, 3, 30),
+        'eventDate': DateTime(2026, 3, 19),
         'details': [
           'Fıtır sadakası vermek',
           'Bayram namazı',
@@ -809,9 +809,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Kurban Bayramı',
-        'subtitle': '10-13 Zilhicce 1446',
+        'subtitle': '10-13 Zilhicce 1447',
         'description': 'Kurban Bayramı',
-        'eventDate': DateTime(2025, 6, 6),
+        'eventDate': DateTime(2026, 5, 26),
         'details': [
           'Kurban kesimi',
           'Bayram namazı',
@@ -821,9 +821,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
       {
         'name': 'Aşure Günü',
-        'subtitle': '10 Muharrem 1447',
+        'subtitle': '10 Muharrem 1448',
         'description': 'Muharrem ayının onuncu günü',
-        'eventDate': DateTime(2025, 7, 16),
+        'eventDate': DateTime(2026, 7, 5),
         'details': [
           'Oruç tutma',
           'Aşure yapma ve dağıtma',
@@ -937,7 +937,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: GlobalAppStyle.accentColor.withOpacity(0.8),
+                            color: Colors.white.withOpacity(0.7),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1004,7 +1004,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: GlobalAppStyle.accentColor.withOpacity(0.8),
+                              color: Colors.white.withOpacity(0.7),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -1087,6 +1087,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
+              
+              // Bottom separator line
+              Container(
+                height: 0.5,
+                margin: const EdgeInsets.only(top: 4),
+                color: Colors.white.withOpacity(0.08),
+              ),
             ],
           ),
         );
@@ -1140,7 +1147,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 Icon(
                   Icons.info_outline,
-                  color: GlobalAppStyle.accentColor.withOpacity(0.8),
+                  color: Colors.white.withOpacity(0.5),
                   size: 20,
                 ),
                 const SizedBox(width: 12),

@@ -405,10 +405,15 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             top: MediaQuery.of(context).padding.top + 64,
             child: Row(
               children: [
-                // Surah chip
+                // Search icon - opens surah panel
+                _buildFloatingIconChip(
+                  Icons.search,
+                  onTap: _toggleSurahPanel,
+                ),
+                const SizedBox(width: 8),
+                // Surah chip - display only
                 _buildFloatingChip(
                   '$selectedSurah $selectedSurahNumber',
-                  onTap: _toggleSurahPanel,
                 ),
                 const SizedBox(width: 8),
                 // Translation chip
@@ -548,7 +553,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       // Fixed header - stays still while content scrolls
                       Container(
                         width: double.infinity,
-                        padding: EdgeInsets.only(left: 16, right: 16, top: topPadding - 95, bottom: 16),
+                        padding: EdgeInsets.only(left: 12, right: 12, top: topPadding - 95, bottom: 12),
                         decoration: BoxDecoration(
                           border: Border(
                             bottom: BorderSide(
@@ -557,19 +562,70 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                             ),
                           ),
                         ),
-                        child: Text(
-                          'Sureler',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 4,
+                        child: Row(
+                          children: [
+                            Text(
+                              'Sureler',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 4,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            const Spacer(),
+                            // Search group (input + magnifier)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 100,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.white.withOpacity(0.08),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.1),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: TextField(
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Ara...',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white.withOpacity(0.4),
+                                        fontSize: 13,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      isDense: true,
+                                    ),
+                                    onChanged: (value) {
+                                      // TODO: Filter surahs based on search
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.search,
+                                  size: 22,
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                       
@@ -591,7 +647,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                     _loadSurah(surahNumber);
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
@@ -601,18 +657,18 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       ),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       child: BackdropFilter(
                         filter: isSelected 
                             ? ImageFilter.blur(sigmaX: 10, sigmaY: 10)
                             : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? Colors.white.withOpacity(0.08)
                                 : null,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: isSelected
                                 ? Border.all(
                                     color: Colors.white.withOpacity(0.05),
@@ -957,6 +1013,57 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingIconChip(IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white.withOpacity(0.08),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.18),
+                    Colors.white.withOpacity(0.06),
+                    Colors.white.withOpacity(0.02),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: Colors.white.withOpacity(0.9),
               ),
             ),
           ),
