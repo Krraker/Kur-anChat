@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
+import 'onboarding/paywall_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -264,9 +265,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 ),
               ),
               
-              // Settings button
+              // Settings / Upgrade button
               IconButton(
-                onPressed: () {},
+                onPressed: () async {
+                  await showPaywall(context, language: 'tr');
+                },
                 icon: Icon(
                   Icons.settings_outlined,
                   color: Colors.white.withOpacity(0.7),

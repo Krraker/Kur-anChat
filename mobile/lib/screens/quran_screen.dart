@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
+import '../widgets/audio/audio_player_widget.dart';
 import '../services/api_config.dart';
 import '../services/reading_progress_service.dart';
+import '../services/audio_service.dart';
 import '../models/message.dart' show decodeHtmlEntities;
 
 /// Quran reading screen - with API integration
@@ -36,6 +38,10 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   final ScrollController _scrollController = ScrollController();
   Set<int> _visibleVerses = {};
   int _lastDisplayedProgress = -1; // Track last displayed percentage
+  
+  // Audio service
+  final QuranAudioService _audioService = QuranAudioService();
+  bool _showAudioPlayer = false;
 
   @override
   void initState() {
@@ -45,6 +51,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     
     // Track visible verses for progress
     _scrollController.addListener(_onScroll);
+    
+    // Listen to audio state changes
+    _audioService.addListener(_onAudioStateChanged);
     
     // Initialize panel animation controller
     _panelAnimationController = AnimationController(
@@ -118,11 +127,20 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     }
   }
   
+  void _onAudioStateChanged() {
+    if (mounted) {
+      setState(() {
+        _showAudioPlayer = _audioService.state != AudioPlaybackState.idle;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _panelAnimationController.dispose();
+    _audioService.removeListener(_onAudioStateChanged);
     super.dispose();
   }
   
@@ -432,6 +450,20 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             child: _buildProgressIndicator(),
           ),
           
+          // Audio player island (Dynamic Island style - glassmorphism)
+          if (_showAudioPlayer)
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 210,
+              child: AudioPlayerIsland(
+                onClose: () {
+                  _audioService.stop();
+                  setState(() => _showAudioPlayer = false);
+                },
+              ),
+            ),
+          
           // Bottom navigation controls - floating glassmorphism buttons
           Positioned(
             left: 0,
@@ -451,13 +483,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                   ),
                   
                   // Play/Audio button
-                  _buildNavButton(
-                    Icons.play_arrow,
-                    isCenter: true,
-                    onTap: () {
-                      // TODO: Audio playback
-                    },
-                  ),
+                  _buildAudioPlayButton(),
                   
                   // Next surah button
                   _buildNavButton(
@@ -1135,30 +1161,141 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           
           const SizedBox(height: 10),
           
-          // Translation (left-to-right, left-aligned)
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Text(
-              translationText,
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                fontStyle: FontStyle.italic,
-                color: Colors.white.withOpacity(0.8),
-                height: 1.5,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                  ),
-                ],
+          // Translation row with play button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Play button for this verse
+              VersePlayButton(
+                surah: selectedSurahNumber,
+                ayah: verseNumber is int ? verseNumber : 1,
+                surahName: selectedSurah,
+                textTr: translationText,
+                size: 32,
               ),
-            ),
+              
+              const SizedBox(width: 10),
+              
+              // Translation (left-to-right, left-aligned)
+              Expanded(
+                child: Text(
+                  translationText,
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.5,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  /// Audio play button for the nav controls
+  Widget _buildAudioPlayButton() {
+    final isPlaying = _audioService.isPlaying;
+    final isLoading = _audioService.isLoading;
+    final isPaused = _audioService.isPaused;
+    
+    return GestureDetector(
+      onTap: () async {
+        if (isPlaying) {
+          await _audioService.pause();
+        } else if (isPaused) {
+          await _audioService.resume();
+        } else {
+          await _playSurahFromStart();
+        }
+      },
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.08),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.15),
+                  width: 0.5,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.18),
+                    Colors.white.withOpacity(0.06),
+                    Colors.white.withOpacity(0.02),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
+                ),
+              ),
+              child: Center(
+                child: isLoading
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        isPlaying ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white.withOpacity(0.9),
+                        size: 28,
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  /// Play the current surah from the first verse
+  Future<void> _playSurahFromStart() async {
+    if (_verses.isEmpty) return;
+    
+    final playlist = _verses.map((verse) {
+      return PlayingVerse(
+        surah: selectedSurahNumber,
+        ayah: verse['number'] as int? ?? 1,
+        surahName: selectedSurah,
+        textTr: verse['translation'] as String?,
+      );
+    }).toList();
+    
+    await _audioService.playPlaylist(verses: playlist);
+    setState(() => _showAudioPlayer = true);
   }
 
   Widget _buildNavButton(IconData icon, {bool isCenter = false, VoidCallback? onTap}) {

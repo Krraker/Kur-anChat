@@ -36,6 +36,42 @@ class SubscriptionService {
   /// Available subscription packages (cached after loadOfferings)
   List<Package> get packages => _packages;
 
+  /// Last error message
+  String? _error;
+  String? get error => _error;
+
+  /// Get weekly package
+  Package? get weeklyPackage => _packages.cast<Package?>().firstWhere(
+    (p) => p?.packageType == PackageType.weekly,
+    orElse: () => null,
+  );
+
+  /// Get monthly package
+  Package? get monthlyPackage => _packages.cast<Package?>().firstWhere(
+    (p) => p?.packageType == PackageType.monthly,
+    orElse: () => null,
+  );
+
+  /// Get yearly package
+  Package? get yearlyPackage => _packages.cast<Package?>().firstWhere(
+    (p) => p?.packageType == PackageType.annual,
+    orElse: () => null,
+  );
+
+  /// Calculate yearly savings percentage compared to monthly
+  int? get yearlySavingsPercent {
+    final monthly = monthlyPackage;
+    final yearly = yearlyPackage;
+    if (monthly == null || yearly == null) return null;
+    
+    final monthlyAnnual = monthly.storeProduct.price * 12;
+    final yearlyPrice = yearly.storeProduct.price;
+    
+    if (monthlyAnnual <= 0) return null;
+    final savings = ((monthlyAnnual - yearlyPrice) / monthlyAnnual * 100).round();
+    return savings > 0 ? savings : null;
+  }
+
   /// Initialize RevenueCat SDK - call this on app startup
   Future<void> initialize() async {
     if (_isInitialized) return;

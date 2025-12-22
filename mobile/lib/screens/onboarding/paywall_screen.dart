@@ -2,20 +2,25 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import '../../widgets/onboarding/continue_button.dart';
 import '../../styles/styles.dart';
 import '../../services/subscription_service.dart';
+
+// =============================================================================
+// UNIFIED PAYWALL SCREEN
+// =============================================================================
 
 class PaywallScreen extends StatefulWidget {
   final VoidCallback onContinue;
   final VoidCallback onSkip;
   final String? language;
+  final bool fromSettings;
 
   const PaywallScreen({
     super.key,
     required this.onContinue,
     required this.onSkip,
     this.language,
+    this.fromSettings = false,
   });
 
   @override
@@ -25,27 +30,29 @@ class PaywallScreen extends StatefulWidget {
 class _PaywallScreenState extends State<PaywallScreen>
     with TickerProviderStateMixin {
   bool _wantsTrial = true;
-  int _selectedPlan = 0;
-  bool _isDisposed = false; // Track disposal state for async operations
+  int _selectedPlanIndex = 0; // 0 = trial/monthly, 1 = yearly
+  bool _isDisposed = false;
   bool _isLoading = true;
   bool _isPurchasing = false;
-  List<Package> _packages = [];
   String? _errorMessage;
+  
+  // Packages
+  Package? _weeklyPackage;
+  Package? _monthlyPackage;
+  Package? _yearlyPackage;
 
-  // Entry animation controllers (play once)
+  // Animation controllers
   late AnimationController _leftBigCloudController;
   late AnimationController _leftSmallCloudController;
   late AnimationController _rightCloudController;
   late AnimationController _doveController;
   late AnimationController _starsController;
-  
-  // Ongoing subtle horizontal floating (after intro)
   late AnimationController _floatController1;
   late AnimationController _floatController2;
   late AnimationController _floatController3;
   late AnimationController _sunPulseController;
 
-  // Entry animations
+  // Animations
   late Animation<double> _leftBigCloudSlide;
   late Animation<double> _leftSmallCloudSlide;
   late Animation<double> _rightCloudSlide;
@@ -53,26 +60,29 @@ class _PaywallScreenState extends State<PaywallScreen>
   late Animation<double> _doveSlide;
   late Animation<double> _starsOpacity;
   late Animation<double> _starsScale;
-  
-  // Ongoing horizontal float animations (very slow, left-right)
   late Animation<double> _float1;
   late Animation<double> _float2;
   late Animation<double> _float3;
   late Animation<double> _sunPulseAnimation;
 
   bool get isEnglish => widget.language == 'en';
+  bool get _hasRealPackages => 
+      _weeklyPackage != null || _monthlyPackage != null || _yearlyPackage != null;
+
+  // Demo prices
+  String get _monthlyPrice => isEnglish ? '\$9.99' : '₺249,99';
+  String get _yearlyPrice => isEnglish ? '\$59.99' : '₺1.499,99';
+  int get _savingsPercent => 50; // 50% savings on yearly
 
   @override
   void initState() {
     super.initState();
-    
-    // Load subscription packages from RevenueCat
     _loadOfferings();
+    _initAnimations();
+    _startEntryAnimations();
+  }
 
-    // === ENTRY ANIMATIONS (very slow, elegant) ===
-    
-    // Right cloud - slides from RIGHT to LEFT (FIRST to appear)
-    // Negative value = off-screen to the right
+  void _initAnimations() {
     _rightCloudController = AnimationController(
       duration: const Duration(milliseconds: 4500),
       vsync: this,
@@ -81,7 +91,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _rightCloudController, curve: Curves.easeOutQuint),
     );
 
-    // Left big cloud - slides from left (second)
     _leftBigCloudController = AnimationController(
       duration: const Duration(milliseconds: 5000),
       vsync: this,
@@ -90,7 +99,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _leftBigCloudController, curve: Curves.easeOutQuint),
     );
 
-    // Left small cloud - slides from left (third)
     _leftSmallCloudController = AnimationController(
       duration: const Duration(milliseconds: 5500),
       vsync: this,
@@ -99,7 +107,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _leftSmallCloudController, curve: Curves.easeOutQuint),
     );
 
-    // Dove - fades in + slides from left (very elegant)
     _doveController = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
@@ -114,7 +121,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _doveController, curve: Curves.easeOutQuart),
     );
 
-    // Stars - fade in + scale (elegant)
     _starsController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -126,9 +132,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _starsController, curve: Curves.easeOutQuart),
     );
 
-    // === ONGOING SUBTLE HORIZONTAL FLOATING (very slow, oscillating left/right) ===
-    
-    // Float 1 - for left big cloud and dove (8 seconds cycle)
     _floatController1 = AnimationController(
       duration: const Duration(seconds: 8),
       vsync: this,
@@ -137,7 +140,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _floatController1, curve: Curves.easeInOut),
     );
 
-    // Float 2 - for right cloud (10 seconds cycle, different phase)
     _floatController2 = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
@@ -146,7 +148,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _floatController2, curve: Curves.easeInOut),
     );
 
-    // Float 3 - for left small cloud and stars (7 seconds cycle)
     _floatController3 = AnimationController(
       duration: const Duration(seconds: 7),
       vsync: this,
@@ -155,7 +156,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       CurvedAnimation(parent: _floatController3, curve: Curves.easeInOut),
     );
 
-    // Sun very gentle pulse
     _sunPulseController = AnimationController(
       duration: const Duration(seconds: 6),
       vsync: this,
@@ -163,44 +163,34 @@ class _PaywallScreenState extends State<PaywallScreen>
     _sunPulseAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
       CurvedAnimation(parent: _sunPulseController, curve: Curves.easeInOut),
     );
-
-    // Start entry animation sequence
-    _startEntryAnimations();
   }
 
   void _startEntryAnimations() async {
-    // Right cloud comes FIRST from the right
     if (_isDisposed) return;
     _rightCloudController.forward();
     
-    // Left big cloud comes second
     await Future.delayed(const Duration(milliseconds: 800));
     if (_isDisposed || !mounted) return;
     _leftBigCloudController.forward();
     
-    // Left small cloud comes third
     await Future.delayed(const Duration(milliseconds: 1200));
     if (_isDisposed || !mounted) return;
     _leftSmallCloudController.forward();
     
-    // Dove appears after clouds are moving
     await Future.delayed(const Duration(milliseconds: 1500));
     if (_isDisposed || !mounted) return;
     _doveController.forward();
     
-    // Stars appear last
     await Future.delayed(const Duration(milliseconds: 1800));
     if (_isDisposed || !mounted) return;
     _starsController.forward();
     
-    // Start the subtle horizontal floating after intro completes
     await Future.delayed(const Duration(milliseconds: 3000));
     if (_isDisposed || !mounted) return;
     _startFloatingAnimations();
   }
 
   void _startFloatingAnimations() {
-    // Start floating with different phases for organic feel
     if (_isDisposed || !mounted) return;
     _floatController1.repeat(reverse: true);
     
@@ -217,7 +207,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
   @override
   void dispose() {
-    _isDisposed = true; // Mark as disposed before disposing controllers
+    _isDisposed = true;
     _leftBigCloudController.dispose();
     _leftSmallCloudController.dispose();
     _rightCloudController.dispose();
@@ -230,19 +220,19 @@ class _PaywallScreenState extends State<PaywallScreen>
     super.dispose();
   }
 
-  /// Load subscription packages from RevenueCat
   Future<void> _loadOfferings() async {
     try {
       final subscriptionService = SubscriptionService();
       
-      // Load offerings if not already loaded
       if (subscriptionService.packages.isEmpty) {
         await subscriptionService.loadOfferings();
       }
       
       if (mounted && !_isDisposed) {
         setState(() {
-          _packages = subscriptionService.packages;
+          _weeklyPackage = subscriptionService.weeklyPackage;
+          _monthlyPackage = subscriptionService.monthlyPackage;
+          _yearlyPackage = subscriptionService.yearlyPackage;
           _isLoading = false;
         });
       }
@@ -251,31 +241,38 @@ class _PaywallScreenState extends State<PaywallScreen>
       if (mounted && !_isDisposed) {
         setState(() {
           _isLoading = false;
-          _errorMessage = isEnglish 
-              ? 'Unable to load subscription options' 
-              : 'Abonelik seçenekleri yüklenemedi';
         });
       }
     }
   }
 
-  /// Handle subscription purchase
   Future<void> _purchaseSelectedPlan() async {
-    // If no packages loaded, allow free trial (skip)
-    if (_packages.isEmpty) {
-      widget.onContinue();
+    if (!_hasRealPackages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isEnglish 
+              ? 'Demo mode - RevenueCat not configured yet' 
+              : 'Demo modu - RevenueCat henüz yapılandırılmadı'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted && !_isDisposed) {
+          widget.onContinue();
+        }
+      });
       return;
     }
-
-    // Get the selected package
-    Package? selectedPackage;
-    if (_selectedPlan < _packages.length) {
-      selectedPackage = _packages[_selectedPlan];
-    } else if (_packages.isNotEmpty) {
-      selectedPackage = _packages.first;
+    
+    Package? package;
+    if (_selectedPlanIndex == 0) {
+      package = _monthlyPackage ?? _weeklyPackage;
+    } else {
+      package = _yearlyPackage;
     }
-
-    if (selectedPackage == null) {
+    
+    if (package == null) {
       widget.onContinue();
       return;
     }
@@ -286,7 +283,7 @@ class _PaywallScreenState extends State<PaywallScreen>
     });
 
     try {
-      final result = await SubscriptionService().purchase(selectedPackage);
+      final result = await SubscriptionService().purchase(package);
       
       if (mounted && !_isDisposed) {
         setState(() => _isPurchasing = false);
@@ -296,7 +293,6 @@ class _PaywallScreenState extends State<PaywallScreen>
             _showSuccessAndContinue();
             break;
           case PurchaseResultType.cancelled:
-            // User cancelled - don't show error, just let them try again
             break;
           case PurchaseResultType.failed:
             setState(() {
@@ -320,7 +316,6 @@ class _PaywallScreenState extends State<PaywallScreen>
     }
   }
 
-  /// Restore previous purchases
   Future<void> _restorePurchases() async {
     setState(() => _isPurchasing = true);
     
@@ -360,7 +355,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       ),
     );
     
-    // Small delay to show the success message
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && !_isDisposed) {
         widget.onContinue();
@@ -368,32 +362,30 @@ class _PaywallScreenState extends State<PaywallScreen>
     });
   }
 
-  /// Get display price for a package
-  String _getPackagePrice(int index) {
-    if (index < _packages.length) {
-      return _packages[index].storeProduct.priceString;
+  String _getTrialEndDate() {
+    final trialEnd = DateTime.now().add(const Duration(days: 7));
+    final months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    final monthsEn = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    if (isEnglish) {
+      return '${monthsEn[trialEnd.month - 1]} ${trialEnd.day}, ${trialEnd.year}';
     }
-    // Fallback prices if packages not loaded
-    // USD: Weekly $1.99, Monthly $7.99, Yearly $29.99
-    // TRY: Weekly ₺29,99, Monthly ₺99,99, Yearly ₺699,99
-    switch (index) {
-      case 0: // Weekly
-        return isEnglish ? '\$1.99/wk' : '₺29,99/hafta';
-      case 1: // Monthly
-        return isEnglish ? '\$7.99/mo' : '₺99,99/ay';
-      case 2: // Yearly
-        return isEnglish ? '\$29.99/yr' : '₺699,99/yıl';
-      default:
-        return '';
-    }
+    return '${trialEnd.day} ${months[trialEnd.month - 1]} ${trialEnd.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // SVG Background - covers entire screen
+          // SVG Background
           Positioned.fill(
             child: SvgPicture.asset(
               'assets/PaywallAnimation/Background.svg',
@@ -401,321 +393,328 @@ class _PaywallScreenState extends State<PaywallScreen>
             ),
           ),
           
+          // Dark overlay for better readability
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.3),
+                    Colors.black.withOpacity(0.8),
+                    Colors.black,
+                  ],
+                  stops: const [0.0, 0.3, 0.5, 0.7],
+                ),
+              ),
+            ),
+          ),
+          
           // Content
           SafeArea(
             child: Column(
               children: [
-                // Close button - minimal space
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
-                    onPressed: widget.onSkip,
-                    icon: Icon(
-                      Icons.close,
-                      color: Colors.white.withOpacity(0.6),
-                      size: 22,
+                // Close button
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                      onPressed: widget.onSkip,
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.white.withOpacity(0.6),
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // Animated illustration header - compact height, big elements
-              _buildAnimatedHeader(),
+                // Animated illustration header - reduced height
+                _buildAnimatedHeader(),
 
-              // Content - compact, shifted up
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      // Title - SVG text - BIGGER
-                      SvgPicture.asset(
-                        'assets/PaywallAnimation/NeverMissaMomentofFaith.svg',
-                        width: MediaQuery.of(context).size.width * 0.95,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Features - compact
-                      _buildFeatureItem(isEnglish
-                          ? 'Personalized daily verses'
-                          : 'Kişiselleştirilmiş günlük ayetler'),
-                      const SizedBox(height: 5),
-                      _buildFeatureItem(isEnglish
-                          ? 'Unlimited chat and questions'
-                          : 'Sınırsız sohbet ve soru sorma'),
-                      const SizedBox(height: 5),
-                      _buildFeatureItem(isEnglish
-                          ? 'Audio tafsir and prayers'
-                          : 'Sesli tefsir ve dua'),
-                      const SizedBox(height: 5),
-                      _buildFeatureItem(isEnglish
-                          ? 'Home screen widget'
-                          : 'Ana ekran widget\'ı'),
-
-                      const SizedBox(height: 8),
-
-                      // Trial toggle
-                      _buildTrialToggle(),
-
-                      const SizedBox(height: 6),
-
-                      // Pricing options - show loading or real packages
-                      if (_isLoading)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: CircularProgressIndicator(
-                            color: Colors.white54,
-                            strokeWidth: 2,
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title
+                        Center(
+                          child: Text(
+                            isEnglish 
+                                ? 'Never Miss a Moment of Faith'
+                                : 'İmanın Bir Anını Kaçırma',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'OggText',
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        )
-                      else ...[
-                        _buildPricingOption(
-                          title: isEnglish
-                              ? '7 Days Free Trial'
-                              : '7 Gün Ücretsiz Deneme',
-                          subtitle: isEnglish
-                              ? 'Then ${_getPackagePrice(0)}. No payment now.'
-                              : 'Sonra ${_getPackagePrice(0)}. Şimdi ödeme yok.',
-                          isSelected: _selectedPlan == 0,
-                          onTap: () => setState(() => _selectedPlan = 0),
                         ),
 
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 16),
 
-                        _buildPricingOption(
-                          title: isEnglish ? 'Yearly Access' : 'Yıllık Erişim',
-                          subtitle: isEnglish
-                              ? 'Billed yearly at ${_getPackagePrice(1)}'
-                              : 'Yıllık ${_getPackagePrice(1)}',
-                          isSelected: _selectedPlan == 1,
-                          badge: isEnglish ? 'SAVE 50%' : '%50 TASARRUF',
-                          onTap: () => setState(() => _selectedPlan = 1),
-                        ),
-                      ],
+                        // Features list - reduced spacing
+                        _buildFeatureItem(isEnglish
+                            ? 'Home Screen Widget with Personalized Verses'
+                            : 'Kişiselleştirilmiş Ayetlerle Ana Ekran Widget\'ı'),
+                        const SizedBox(height: 8),
+                        _buildFeatureItem(isEnglish
+                            ? 'Bring the Quran to your Home Screen'
+                            : 'Kur\'an\'ı Ana Ekranınıza Getirin'),
+                        const SizedBox(height: 8),
+                        _buildFeatureItem(isEnglish
+                            ? 'Personalized Audio Daily Devotionals'
+                            : 'Kişiselleştirilmiş Sesli Günlük Dualar'),
 
-                      const SizedBox(height: 5),
+                        const SizedBox(height: 14),
 
-                      // Cancellation note
-                      Text(
-                        isEnglish
-                            ? 'Cancel anytime before Dec 15, 2025. No risks, no charges.'
-                            : '15 Aralık 2025\'e kadar istediğiniz zaman iptal edin. Risk yok, ücret yok.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white.withOpacity(0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                        // Trial toggle - compact
+                        _buildTrialToggle(),
 
-              // Bottom buttons - compact padding
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
-                child: Column(
-                  children: [
-                    // Error message if any
-                    if (_errorMessage != null) ...[
-                      Text(
-                        _errorMessage!,
-                        style: TextStyle(
-                          color: Colors.orange.shade300,
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    
-                    // Purchase button with loading state
-                    _isPurchasing
-                        ? const SizedBox(
-                            height: 56,
-                            child: Center(
+                        const SizedBox(height: 10),
+
+                        // Package options
+                        if (_isLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
                               child: CircularProgressIndicator(
-                                color: GlobalAppStyle.accentColor,
+                                color: Colors.white54,
+                                strokeWidth: 2,
                               ),
                             ),
                           )
-                        : ContinueButton(
-                            text: _wantsTrial
-                                ? (isEnglish ? 'Try for Free' : 'Ücretsiz Dene')
-                                : (isEnglish ? 'Subscribe Now' : 'Şimdi Abone Ol'),
-                            onPressed: _purchaseSelectedPlan,
+                        else ...[
+                          // 7 days Free Trial option
+                          _buildTrialPackageCard(),
+                          
+                          const SizedBox(height: 10),
+                          
+                          // Yearly option
+                          _buildYearlyPackageCard(),
+                        ],
+
+                        const SizedBox(height: 12),
+
+                        // Cancel anytime text
+                        Center(
+                          child: Text(
+                            isEnglish
+                                ? 'Cancel anytime before ${_getTrialEndDate()}.\nNo risks, no charges.'
+                                : '${_getTrialEndDate()} tarihinden önce istediğiniz zaman iptal edin.\nRisk yok, ücret yok.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withOpacity(0.5),
+                              height: 1.3,
+                            ),
                           ),
+                        ),
 
-                    const SizedBox(height: 10),
-
-                    // Terms
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildTermsLink(
-                            isEnglish ? 'Terms of Use' : 'Kullanım Şartları'),
-                        const SizedBox(width: 16),
-                        _buildTermsLink(isEnglish
-                            ? 'Privacy Policy'
-                            : 'Gizlilik Politikası'),
-                        const SizedBox(width: 16),
-                        _buildRestoreLink(),
+                        const SizedBox(height: 4),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+
+                // Bottom section
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  child: Column(
+                    children: [
+                      // Error message
+                      if (_errorMessage != null) ...[
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.orange.shade300,
+                            fontSize: 11,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                      ],
+                      
+                      // Try for Free button - FIRST
+                      _isPurchasing
+                          ? const SizedBox(
+                              height: 58,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: GlobalAppStyle.accentColor,
+                                ),
+                              ),
+                            )
+                          : _buildTryButton(),
+
+                      const SizedBox(height: 14),
+                      
+                      // Terms links - BELOW the button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildTermsLink(isEnglish ? 'Terms of use' : 'Kullanım Şartları'),
+                          const SizedBox(width: 16),
+                          _buildTermsLink(isEnglish ? 'Privacy policy' : 'Gizlilik Politikası'),
+                          const SizedBox(width: 16),
+                          GestureDetector(
+                            onTap: _isPurchasing ? null : _restorePurchases,
+                            child: Text(
+                              isEnglish ? 'Restore' : 'Geri Yükle',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         ],
       ),
     );
   }
 
   Widget _buildAnimatedHeader() {
-    // Get screen width for proportional positioning
     final screenWidth = MediaQuery.of(context).size.width;
     
     return SizedBox(
-      height: 160, // Reduced height - elements overflow upward
+      height: 150,
       width: double.infinity,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // === SUN LAYERS (upper right - subtle pulse animation) ===
-          // Sun outer glow - BIGGER
+          // Sun layers
           AnimatedBuilder(
             animation: _sunPulseAnimation,
             builder: (context, child) {
               return Positioned(
-                right: -120,
-                top: -200,
+                right: -80,
+                top: -150,
                 child: Transform.scale(
                   scale: _sunPulseAnimation.value,
                   child: SvgPicture.asset(
                     'assets/PaywallAnimation/sun_outer.svg',
-                    width: 450,
-                    height: 470,
+                    width: 350,
+                    height: 350,
                   ),
                 ),
               );
             },
           ),
 
-          // Sun middle ring - BIGGER
           AnimatedBuilder(
             animation: _sunPulseAnimation,
             builder: (context, child) {
               return Positioned(
-                right: -60,
-                top: -130,
+                right: -40,
+                top: -100,
                 child: Transform.scale(
                   scale: _sunPulseAnimation.value,
                   child: SvgPicture.asset(
                     'assets/PaywallAnimation/sun_middle.svg',
-                    width: 340,
-                    height: 200,
+                    width: 280,
+                    height: 180,
                   ),
                 ),
               );
             },
           ),
 
-          // Sun core - BIGGER
           AnimatedBuilder(
             animation: _sunPulseAnimation,
             builder: (context, child) {
               return Positioned(
-                right: -10,
-                top: -80,
+                right: 10,
+                top: -50,
                 child: Transform.scale(
                   scale: _sunPulseAnimation.value,
                   child: SvgPicture.asset(
                     'assets/PaywallAnimation/sun_core.svg',
-                    width: 230,
-                    height: 140,
+                    width: 180,
+                    height: 120,
                   ),
                 ),
               );
             },
           ),
 
-          // === CLOUDS (slide in from edges, then float HORIZONTALLY) ===
-          // Left big cloud - BIGGER, slides from left
+          // Clouds
           AnimatedBuilder(
             animation: Listenable.merge([_leftBigCloudSlide, _float1]),
             builder: (context, child) {
               return Positioned(
-                left: -100 + _leftBigCloudSlide.value + _float1.value,
-                top: -40,
+                left: -80 + _leftBigCloudSlide.value + _float1.value,
+                top: -20,
                 child: SvgPicture.asset(
                   'assets/PaywallAnimation/cloud_LeftBig.svg',
-                  width: 320,
-                  height: 195,
+                  width: 260,
+                  height: 160,
                 ),
               );
             },
           ),
 
-          // Right cloud - BIGGER, slides from right
           AnimatedBuilder(
             animation: Listenable.merge([_rightCloudSlide, _float2]),
             builder: (context, child) {
               return Positioned(
-                right: -70 + _rightCloudSlide.value + _float2.value,
-                top: 40,
+                right: -50 + _rightCloudSlide.value + _float2.value,
+                top: 60,
                 child: SvgPicture.asset(
                   'assets/PaywallAnimation/cloud_right.svg',
-                  width: 250,
-                  height: 150,
+                  width: 200,
+                  height: 120,
                 ),
               );
             },
           ),
 
-          // Left small cloud - BIGGER, slides from left
           AnimatedBuilder(
             animation: Listenable.merge([_leftSmallCloudSlide, _float3]),
             builder: (context, child) {
               return Positioned(
-                left: -60 + _leftSmallCloudSlide.value + _float3.value,
-                top: 110,
+                left: -40 + _leftSmallCloudSlide.value + _float3.value,
+                top: 100,
                 child: SvgPicture.asset(
                   'assets/PaywallAnimation/cloud_LeftSmall.svg',
-                  width: 160,
-                  height: 100,
+                  width: 130,
+                  height: 80,
                 ),
               );
             },
           ),
 
-          // === STARS (fade in + scale, then float HORIZONTALLY) ===
-          // Star near dove (top left of center) - BIGGER
+          // Stars
           AnimatedBuilder(
             animation: Listenable.merge([_starsOpacity, _starsScale, _float3]),
             builder: (context, child) {
               return Positioned(
-                left: screenWidth * 0.20 + (_float3.value * 0.5),
-                top: -20,
+                left: screenWidth * 0.15 + (_float3.value * 0.5),
+                top: -10,
                 child: Opacity(
                   opacity: _starsOpacity.value,
                   child: Transform.scale(
                     scale: _starsScale.value,
                     child: SvgPicture.asset(
                       'assets/PaywallAnimation/star.svg',
-                      width: 36,
-                      height: 36,
+                      width: 28,
+                      height: 28,
                     ),
                   ),
                 ),
@@ -723,21 +722,20 @@ class _PaywallScreenState extends State<PaywallScreen>
             },
           ),
 
-          // Star upper right (small) - BIGGER
           AnimatedBuilder(
             animation: Listenable.merge([_starsOpacity, _starsScale, _float2]),
             builder: (context, child) {
               return Positioned(
-                right: 50 + (_float2.value * 0.4),
-                top: -35,
+                right: 60 + (_float2.value * 0.4),
+                top: -25,
                 child: Opacity(
                   opacity: _starsOpacity.value * 0.8,
                   child: Transform.scale(
                     scale: _starsScale.value,
                     child: SvgPicture.asset(
                       'assets/PaywallAnimation/star.svg',
-                      width: 24,
-                      height: 24,
+                      width: 20,
+                      height: 20,
                     ),
                   ),
                 ),
@@ -745,43 +743,21 @@ class _PaywallScreenState extends State<PaywallScreen>
             },
           ),
 
-          // Star right side (medium) - BIGGER
-          AnimatedBuilder(
-            animation: Listenable.merge([_starsOpacity, _starsScale, _float1]),
-            builder: (context, child) {
-              return Positioned(
-                right: 25 + (_float1.value * 0.6),
-                top: 5,
-                child: Opacity(
-                  opacity: _starsOpacity.value,
-                  child: Transform.scale(
-                    scale: _starsScale.value,
-                    child: SvgPicture.asset(
-                      'assets/PaywallAnimation/star.svg',
-                      width: 30,
-                      height: 30,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // === DOVE (fade in + slide from left, then float HORIZONTALLY) ===
+          // Dove
           AnimatedBuilder(
             animation: Listenable.merge([_doveOpacity, _doveSlide, _float1]),
             builder: (context, child) {
               return Positioned(
                 left: _doveSlide.value + (_float1.value * 0.8),
-                right: 10,
-                top: 10,
+                right: 0,
+                top: 30,
                 child: Center(
                   child: Opacity(
                     opacity: _doveOpacity.value,
                     child: SvgPicture.asset(
                       'assets/PaywallAnimation/dove.svg',
-                      width: 115,
-                      height: 115,
+                      width: 100,
+                      height: 100,
                     ),
                   ),
                 ),
@@ -793,80 +769,34 @@ class _PaywallScreenState extends State<PaywallScreen>
     );
   }
 
-  Widget _buildTrialToggle() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.1),
-                Colors.white.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.15),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  isEnglish
-                      ? 'I want to try the app for free'
-                      : 'Uygulamayı ücretsiz denemek istiyorum',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ),
-              Transform.scale(
-                scale: 0.85,
-                child: Switch(
-                  value: _wantsTrial,
-                  onChanged: (value) {
-                    setState(() => _wantsTrial = value);
-                  },
-                  activeColor: GlobalAppStyle.accentColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildFeatureItem(String text) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: 22,
+          height: 22,
           decoration: BoxDecoration(
-            color: GlobalAppStyle.accentColor.withOpacity(0.2),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withOpacity(0.5),
+              width: 1.5,
+            ),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.check,
-            color: GlobalAppStyle.accentColor,
-            size: 16,
+            color: Colors.white.withOpacity(0.7),
+            size: 13,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.white,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.85),
+              height: 1.25,
             ),
           ),
         ),
@@ -874,91 +804,208 @@ class _PaywallScreenState extends State<PaywallScreen>
     );
   }
 
-  Widget _buildPricingOption({
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required VoidCallback onTap,
-    String? badge,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isSelected
-                    ? [
-                        Colors.white.withOpacity(0.15),
-                        Colors.white.withOpacity(0.08),
-                      ]
-                    : [
-                        Colors.white.withOpacity(0.08),
-                        Colors.white.withOpacity(0.04),
-                      ],
+  Widget _buildTrialToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.15),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              isEnglish
+                  ? 'I want to try the app for free'
+                  : 'Uygulamayı ücretsiz denemek istiyorum',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.9),
               ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? Colors.white.withOpacity(0.5)
-                    : Colors.white.withOpacity(0.15),
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withOpacity(isSelected ? 1 : 0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (badge != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      badge,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-              ],
             ),
           ),
+          Transform.scale(
+            scale: 0.8,
+            child: Switch(
+              value: _wantsTrial,
+              onChanged: (value) {
+                setState(() {
+                  _wantsTrial = value;
+                  if (value) {
+                    _selectedPlanIndex = 0;
+                  }
+                });
+              },
+              activeColor: GlobalAppStyle.accentColor,
+              activeTrackColor: GlobalAppStyle.accentColor.withOpacity(0.4),
+              inactiveThumbColor: Colors.white,
+              inactiveTrackColor: Colors.white.withOpacity(0.3),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrialPackageCard() {
+    final isSelected = _selectedPlanIndex == 0;
+    final monthlyPrice = _hasRealPackages 
+        ? _monthlyPackage?.storeProduct.priceString ?? _monthlyPrice
+        : _monthlyPrice;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPlanIndex = 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? Colors.white.withOpacity(0.12)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? Colors.white.withOpacity(0.5)
+                : Colors.white.withOpacity(0.15),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isEnglish ? '7 days Free Trial' : '7 Gün Ücretsiz Deneme',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              isEnglish 
+                  ? 'Then $monthlyPrice per month. No payment now'
+                  : 'Sonra ayda $monthlyPrice. Şimdi ödeme yok',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildYearlyPackageCard() {
+    final isSelected = _selectedPlanIndex == 1;
+    final yearlyPrice = _hasRealPackages 
+        ? _yearlyPackage?.storeProduct.priceString ?? _yearlyPrice
+        : _yearlyPrice;
+    
+    final savings = _hasRealPackages 
+        ? SubscriptionService().yearlySavingsPercent ?? _savingsPercent
+        : _savingsPercent;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPlanIndex = 1),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? Colors.white.withOpacity(0.12)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? Colors.white.withOpacity(0.5)
+                : Colors.white.withOpacity(0.15),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isEnglish ? 'Yearly Access' : 'Yıllık Erişim',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    isEnglish 
+                        ? 'billed yearly at $yearlyPrice'
+                        : 'yıllık $yearlyPrice',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Savings badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE53935), // Red badge
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                isEnglish ? 'SAVE -$savings%' : '%$savings TASARRUF',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTryButton() {
+    return GestureDetector(
+      onTap: _purchaseSelectedPlan,
+      child: Container(
+        width: double.infinity,
+        height: 58,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16), // Less rounded corners
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _wantsTrial && _selectedPlanIndex == 0
+                  ? (isEnglish ? 'Try for Free' : 'Ücretsiz Dene')
+                  : (isEnglish ? 'Subscribe Now' : 'Şimdi Abone Ol'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 18,
+              color: Colors.black45,
+            ),
+          ],
         ),
       ),
     );
@@ -967,33 +1014,45 @@ class _PaywallScreenState extends State<PaywallScreen>
   Widget _buildTermsLink(String text) {
     return GestureDetector(
       onTap: () {
-        // TODO: Open terms URL in browser
-        // You can use url_launcher package here
+        // TODO: Open terms URL
       },
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: 13,
           color: Colors.white.withOpacity(0.5),
-          decoration: TextDecoration.underline,
         ),
       ),
     );
   }
+}
 
-  Widget _buildRestoreLink() {
-    return GestureDetector(
-      onTap: _isPurchasing ? null : _restorePurchases,
-      child: Text(
-        isEnglish ? 'Restore' : 'Geri Yükle',
-        style: TextStyle(
-          fontSize: 12,
-          color: _isPurchasing 
-              ? Colors.white.withOpacity(0.3)
-              : Colors.white.withOpacity(0.5),
-          decoration: TextDecoration.underline,
-        ),
+// =============================================================================
+// PAYWALL ROUTE HELPER
+// =============================================================================
+
+Future<bool> showPaywall(
+  BuildContext context, {
+  String? language,
+}) async {
+  bool purchased = false;
+  
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => PaywallScreen(
+        language: language,
+        fromSettings: true,
+        onContinue: () {
+          purchased = true;
+          Navigator.of(context).pop();
+        },
+        onSkip: () {
+          Navigator.of(context).pop();
+        },
       ),
-    );
-  }
+    ),
+  );
+  
+  return purchased;
 }

@@ -38,6 +38,10 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   purchases_ui_flutter: ^9.10.1
   
+  # Audio
+  just_audio: ^0.9.40
+  audio_session: ^0.1.21
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -9,6 +9,7 @@ import 'providers/chat_provider.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/subscription_service.dart';
+import 'services/audio_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,9 @@ Future<void> _initializeServices() async {
   if (deviceId != null) {
     await SubscriptionService().setUserId(deviceId);
   }
+  
+  // 4. Initialize audio service
+  await QuranAudioService().init();
   
   debugPrint('All services initialized');
 }
