@@ -65,27 +65,32 @@ class _CalendarPopupState extends State<CalendarPopup> {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Material(
           color: Colors.transparent,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(28),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
               child: Container(
+                constraints: const BoxConstraints(
+                  maxWidth: 420,
+                  minHeight: 480,
+                ),
+                // SECONDARY LAYER - Lighter for further depth
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(28),
+                  color: Colors.white.withOpacity(0.08), // Slightly lighter base
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.12),
                     width: 0.5,
                   ),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(0.15),
-                      Colors.white.withOpacity(0.05),
+                      Colors.white.withOpacity(0.18), // LIGHTER gradient
+                      Colors.white.withOpacity(0.08),
                     ],
                   ),
                 ),
@@ -256,8 +261,9 @@ class _CalendarPopupState extends State<CalendarPopup> {
   }
 
   Widget _buildFooter() {
-    // Simple Hijri date approximation (for demo purposes)
-    // In production, use a proper Hijri calendar library
+    // Get next Holy Calendar event
+    final nextEvent = _getNextHolyEvent();
+    
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
@@ -267,9 +273,78 @@ class _CalendarPopupState extends State<CalendarPopup> {
           ),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
+          // Upcoming Holy Event
+          if (nextEvent != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nextEvent['name'],
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withOpacity(0.9),
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        nextEvent['daysUntil'],
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.6),
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Today button
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedDate = DateTime.now();
+                      _currentMonth = DateTime(_selectedDate.year, _selectedDate.month);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      'Bugün',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.9),
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Separator
+            Container(
+              height: 1,
+              color: Colors.white.withOpacity(0.1),
+            ),
+            const SizedBox(height: 14),
+          ],
           // Hijri date
           Row(
             children: [
@@ -290,37 +365,56 @@ class _CalendarPopupState extends State<CalendarPopup> {
               ),
             ],
           ),
-          // Today button
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedDate = DateTime.now();
-                _currentMonth = DateTime(_selectedDate.year, _selectedDate.month);
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 0.5,
-                ),
-              ),
-              child: Text(
-                'Bugün',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.9),
-                  decoration: TextDecoration.none,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
+  }
+
+  // Get the next upcoming holy event
+  Map<String, dynamic>? _getNextHolyEvent() {
+    final now = DateTime.now();
+    final upcomingEvents = [
+      {
+        'name': 'Regaip Kandili',
+        'eventDate': DateTime(2025, 12, 26),
+      },
+      {
+        'name': 'Miraç Kandili',
+        'eventDate': DateTime(2026, 1, 16),
+      },
+      {
+        'name': 'Berat Kandili',
+        'eventDate': DateTime(2026, 2, 14),
+      },
+      {
+        'name': 'Ramazan Başlangıcı',
+        'eventDate': DateTime(2026, 3, 1),
+      },
+    ];
+
+    // Find the closest upcoming event
+    Map<String, dynamic>? closestEvent;
+    int? minDays;
+
+    for (final event in upcomingEvents) {
+      final eventDate = event['eventDate'] as DateTime;
+      final days = eventDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+      
+      if (days >= 0 && (minDays == null || days < minDays)) {
+        minDays = days;
+        closestEvent = {
+          'name': event['name'],
+          'daysUntil': _formatDaysUntil(days),
+        };
+      }
+    }
+
+    return closestEvent;
+  }
+
+  String _formatDaysUntil(int days) {
+    if (days == 0) return 'Bugün';
+    if (days == 1) return 'Yarın';
+    return '$days gün sonra';
   }
 }

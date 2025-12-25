@@ -167,7 +167,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             ],
           ),
           
-          // Header blur overlay with IgnorePointer (allows scroll through)
+          // Header blur overlay - MASTER LAYER (Darker/Closer)
           Positioned(
             left: 0,
             right: 0,
@@ -175,7 +175,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             child: IgnorePointer(
               child: ClipRect(
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     height: MediaQuery.of(context).padding.top + 72,
                     decoration: BoxDecoration(
@@ -183,16 +183,16 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.6),
-                          Colors.black.withOpacity(0.4),
-                          Colors.black.withOpacity(0.2),
+                          Colors.black.withOpacity(0.75), // DARKER for closer feel
+                          Colors.black.withOpacity(0.55),
+                          Colors.black.withOpacity(0.30),
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.3, 0.7, 1.0],
                       ),
                       border: Border(
                         bottom: BorderSide(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.12),
                           width: 0.5,
                         ),
                       ),

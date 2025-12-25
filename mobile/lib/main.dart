@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'screens/main_navigation.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -10,9 +11,18 @@ import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/subscription_service.dart';
 import 'services/audio_service.dart';
+import 'services/analytics_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase (optional - will fail gracefully if not configured)
+  try {
+    await Firebase.initializeApp();
+    debugPrint('✅ Firebase initialized');
+  } catch (e) {
+    debugPrint('⚠️ Firebase not configured (analytics will log locally): $e');
+  }
   
   // Set system UI overlay style for dark theme
   SystemChrome.setSystemUIOverlayStyle(
@@ -50,7 +60,13 @@ Future<void> _initializeServices() async {
   // 4. Initialize audio service
   await QuranAudioService().init();
   
-  debugPrint('All services initialized');
+  // 5. Initialize analytics service
+  await AnalyticsService().initialize();
+  
+  // 6. Log app open event
+  await AnalyticsService().logAppOpen();
+  
+  debugPrint('✅ All services initialized');
 }
 
 class MyApp extends StatelessWidget {

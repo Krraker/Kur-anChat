@@ -65,12 +65,29 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         return ChatResponse.fromJson(data);
-      } else {
+      }
+      
+      // ⭐ Handle limit exceeded (403 Forbidden)
+      else if (response.statusCode == 403) {
+        final data = jsonDecode(response.body);
+        if (data['code'] == 'MESSAGE_LIMIT_EXCEEDED') {
+          throw MessageLimitException(
+            remainingMessages: data['remainingMessages'] ?? 0,
+            resetAt: DateTime.parse(data['resetAt']),
+            isPremium: data['isPremium'] ?? false,
+          );
+        }
+        throw ApiException('Access denied', 403);
+      }
+      
+      else {
         throw ApiException(
           'Failed to send message: ${response.statusCode}',
           response.statusCode,
         );
       }
+    } on MessageLimitException {
+      rethrow; // Re-throw limit exception to be handled by UI
     } catch (e) {
       throw ApiException('Network error: $e', 0);
     }
@@ -170,13 +187,57 @@ class ApiService {
   }
 }
 
+// ⭐ NEW: Usage tracking model
+class ChatUsage {
+  final int remainingMessages; // -1 = unlimited (premium)
+  final bool isPremium;
+  final DateTime resetAt;
+
+  ChatUsage({
+    required this.remainingMessages,
+    required this.isPremium,
+    required this.resetAt,
+  });
+
+  factory ChatUsage.fromJson(Map<String, dynamic> json) {
+    return ChatUsage(
+      remainingMessages: json['remainingMessages'] as int,
+      isPremium: json['isPremium'] as bool,
+      resetAt: DateTime.parse(json['resetAt'] as String),
+    );
+  }
+
+  bool get isUnlimited => remainingMessages == -1;
+
+  String get displayText {
+    if (isUnlimited) return 'Sınırsız';
+    if (remainingMessages == 0) return 'Limit doldu';
+    return '$remainingMessages mesaj kaldı';
+  }
+
+  String get resetTimeText {
+    final now = DateTime.now();
+    final difference = resetAt.difference(now);
+
+    if (difference.inHours > 0) {
+      return '${difference.inHours} saat sonra';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} dakika sonra';
+    } else {
+      return 'Birkaç saniye sonra';
+    }
+  }
+}
+
 class ChatResponse {
   final String conversationId;
   final AssistantMessageContent response;
+  final ChatUsage? usage; // ⭐ NEW
 
   ChatResponse({
     required this.conversationId,
     required this.response,
+    this.usage,
   });
 
   factory ChatResponse.fromJson(Map<String, dynamic> json) {
@@ -185,8 +246,40 @@ class ChatResponse {
       response: AssistantMessageContent.fromJson(
         json['response'] as Map<String, dynamic>,
       ),
+      usage: json['usage'] != null
+          ? ChatUsage.fromJson(json['usage'] as Map<String, dynamic>)
+          : null,
     );
   }
+}
+
+// ⭐ NEW: Custom exception for message limit reached
+class MessageLimitException implements Exception {
+  final int remainingMessages;
+  final DateTime resetAt;
+  final bool isPremium;
+
+  MessageLimitException({
+    required this.remainingMessages,
+    required this.resetAt,
+    required this.isPremium,
+  });
+
+  String get resetTimeText {
+    final now = DateTime.now();
+    final difference = resetAt.difference(now);
+
+    if (difference.inHours > 0) {
+      return '${difference.inHours} saat sonra';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} dakika sonra';
+    } else {
+      return 'birkaç saniye sonra';
+    }
+  }
+
+  @override
+  String toString() => 'Günlük mesaj limitine ulaştınız. $resetTimeText yeniden deneyin.';
 }
 
 class ApiException implements Exception {

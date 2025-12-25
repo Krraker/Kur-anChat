@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
 import '../widgets/home/weekly_progress_section.dart';
 import '../widgets/home/daily_journey_card.dart';
@@ -281,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // Top gradient overlay with blur
+          // Top gradient overlay with blur - MASTER LAYER (Darker/Closer)
           Positioned(
             left: 0,
             right: 0,
@@ -289,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: IgnorePointer(
               child: ClipRect(
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     height: MediaQuery.of(context).padding.top + 72,
                     decoration: BoxDecoration(
@@ -297,16 +296,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.6),
-                          Colors.black.withOpacity(0.4),
-                          Colors.black.withOpacity(0.2),
+                          Colors.black.withOpacity(0.75), // DARKER for closer feel
+                          Colors.black.withOpacity(0.55),
+                          Colors.black.withOpacity(0.30),
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.3, 0.7, 1.0],
                       ),
                       border: Border(
                         bottom: BorderSide(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.12),
                           width: 0.5,
                         ),
                       ),
@@ -332,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 height: 40,
                 child: Row(
                 children: [
-                  // Profile Avatar / Menu Button (Tap to open menu, Long press to reset onboarding)
+                  // Menu Button (Tap to open menu, Long press to reset onboarding)
                   GestureDetector(
                     onTap: _toggleMenuPanel,
                     onLongPress: () async {
@@ -345,36 +344,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         );
                       }
                     },
-                    child: Container(
+                    child: SvgPicture.asset(
+                      'assets/icons/HamburgerMenu.svg',
                       width: 40,
                       height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          GlobalAppStyle.accentColor,
-                          GlobalAppStyle.accentColor.withOpacity(0.7),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: GlobalAppStyle.accentColor.withOpacity(0.3),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'K',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          ),
-                        ),
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
                       ),
                     ),
                   ),
@@ -507,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildMenuPanel() {
     final screenWidth = MediaQuery.of(context).size.width;
     final panelWidth = screenWidth * 0.75; // Match Sohbetler width
-    final topPadding = MediaQuery.of(context).padding.top;
+    final topPadding = MediaQuery.of(context).padding.top + 110;
     
     return SizedBox(
       width: panelWidth + 28, // Extra space for the edge button
@@ -530,11 +506,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
                 child: Container(
+                  // SECONDARY LAYER - Lighter for further depth
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withOpacity(0.25), // LIGHTER base
                     border: Border(
                       right: BorderSide(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withOpacity(0.12),
                         width: 0.5,
                       ),
                     ),
@@ -545,10 +522,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.white.withOpacity(0.12),
-                          Colors.white.withOpacity(0.06),
-                          Colors.white.withOpacity(0.03),
-                          Colors.white.withOpacity(0.01),
+                          Colors.white.withOpacity(0.15), // LIGHTER gradient
+                          Colors.white.withOpacity(0.08),
+                          Colors.white.withOpacity(0.04),
+                          Colors.white.withOpacity(0.02),
                         ],
                         stops: const [0.0, 0.15, 0.4, 1.0],
                       ),
@@ -558,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         // Header with title - glassmorphism
                         Container(
                           width: double.infinity,
-                          padding: EdgeInsets.only(left: 16, right: 16, top: topPadding + 20, bottom: 16),
+                          padding: EdgeInsets.only(left: 16, right: 16, top: topPadding - 95, bottom: 16),
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
@@ -1109,9 +1086,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Kur\'an Chat Hakkında',
+            'Hakkında',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               shadows: [
@@ -1122,14 +1099,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Kur\'an Chat, İslami değerleri dijital dünyada yaşatmak için tasarlanmış bir uygulamadır. '
-            'Günlük ayetler, dualar ve tefsirlerle manevi yolculuğunuza rehberlik eder.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
-              height: 1.6,
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.white.withOpacity(0.08),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.15),
+                width: 0.5,
+              ),
+            ),
+            child: Text(
+              'Bu uygulama, Kur\'an-ı Kerim ayetlerinin anlamını kavramaya yardımcı olmak amacıyla tasarlanmış bilgilendirici bir dijital yardımcıdır. Sunulan içerikler; klasik tefsirler ve güvenilir İslami kaynaklarda yer alan açıklamaların özetlenmesi, sadeleştirilmesi ve yorumlayıcı olmayan bir biçimde aktarılması yoluyla oluşturulmaktadır.\n\n'
+              'Uygulama; fetva verme, dini hüküm bildirme, dini karar alma, ibadet şekilleri belirleme veya kişisel dini sorumluluklara dair yönlendirme amacı taşımaz ve bu konularda herhangi bir otorite iddiasında bulunmaz. Uygulama tarafından sağlanan tüm bilgiler genel bilgilendirme amaçlıdır ve bağlayıcı dini hüküm niteliği taşımaz.\n\n'
+              'Dini ibadetler, fıkhî meseleler, kişisel veya özel durumlara ilişkin dini konular için yetkin İslam âlimlerine, resmi dini kurumlara veya alanında uzman kişilere danışılması gerekmektedir. Bu uygulama, bu tür konularda nihai karar mercii değildir.\n\n'
+              'Bu uygulama, Kur\'an-ı Kerim\'in anlaşılmasını destekleyen yardımcı bir araç olarak sunulmakta olup, dini otorite, fetva makamı veya rehberlik hizmeti olarak değerlendirilmemelidir.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.85),
+                height: 1.7,
+              ),
             ),
           ),
           const SizedBox(height: 24),

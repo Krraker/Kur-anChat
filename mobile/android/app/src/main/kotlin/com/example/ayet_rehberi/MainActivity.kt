@@ -1,4 +1,4 @@
-package com.example.ayet_rehberi
+package com.kuranchat.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -2,7 +2,7 @@
 /// 
 /// Import this file to access all style-related components:
 /// ```dart
-/// import 'package:ayet_rehberi/styles/styles.dart';
+/// import 'package:kuranchat/styles/styles.dart';
 /// ```
 library;
 

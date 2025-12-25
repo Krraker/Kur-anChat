@@ -1,10 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/app_gradient_background.dart';
+import '../widgets/chat_limit_widgets.dart';
 import '../styles/styles.dart';
+import '../services/analytics_service.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
+import 'onboarding/paywall_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -17,6 +23,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _inputController = TextEditingController();
   bool _showChat = false;
+  bool _isResettingLimit = false; // Dev: track reset state
   
   // Left side history panel state
   bool _isHistoryPanelOpen = false;
@@ -144,6 +151,43 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// ⭐ Show paywall for premium upgrade
+  void _showPaywall(BuildContext context) {
+    // Track analytics
+    AnalyticsService().logUpgradeButtonClicked(source: 'chat_limit');
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaywallScreen(
+          onContinue: () {
+            Navigator.pop(context);
+            // Refresh subscription status
+            context.read<ChatProvider>().resetLimitState();
+          },
+          onSkip: () {
+            Navigator.pop(context);
+          },
+          fromSettings: true, // Coming from chat, not onboarding
+        ),
+      ),
+    );
+  }
+
+  /// ⭐ Show limit dialog when user hits 3-message limit
+  void _showLimitDialog(BuildContext context, ChatProvider chatProvider) {
+    if (chatProvider.usage == null) return;
+
+    // Track analytics
+    AnalyticsService().logUpgradePromptShown(source: 'chat_limit_dialog');
+
+    showChatLimitDialog(
+      context,
+      onUpgradePressed: () => _showPaywall(context),
+      resetTimeText: chatProvider.usage!.resetTimeText,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ChatProvider>(
@@ -153,6 +197,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         // Auto-switch to chat view if messages exist
         if (hasMessages && !_showChat) {
           _showChat = true;
+        }
+
+        // ⭐ Show limit dialog if limit reached
+        if (chatProvider.limitReached && _showChat) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showLimitDialog(context, chatProvider);
+          });
         }
         
         return Scaffold(
@@ -165,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               else
                 _buildHomeView(),
               
-              // Top gradient overlay with blur
+              // Top gradient overlay with blur - MASTER LAYER (Darker/Closer)
               Positioned(
                 left: 0,
                 right: 0,
@@ -173,7 +224,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 child: IgnorePointer(
                   child: ClipRect(
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Container(
                         height: MediaQuery.of(context).padding.top + 72,
                         decoration: BoxDecoration(
@@ -181,16 +232,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.black.withOpacity(0.6),
-                              Colors.black.withOpacity(0.4),
-                              Colors.black.withOpacity(0.2),
+                              Colors.black.withOpacity(0.75), // DARKER for closer feel
+                              Colors.black.withOpacity(0.55),
+                              Colors.black.withOpacity(0.30),
                               Colors.transparent,
                             ],
                             stops: const [0.0, 0.3, 0.7, 1.0],
                           ),
                           border: Border(
                             bottom: BorderSide(
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withOpacity(0.12),
                               width: 0.5,
                             ),
                           ),
@@ -287,6 +338,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         
+                        // Dev reset limit button (only in debug mode)
+                        if (kDebugMode && _showChat) ...[
+                          const SizedBox(width: 8),
+                          _buildDevResetButton(),
+                        ],
+                        
                         const Spacer(),
                         
                         // Refresh button (only in chat)
@@ -314,14 +371,28 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 ),
               ),
               
-              // Floating history chip
+              // Floating chips row (history + usage notification)
               Positioned(
                 left: 16,
+                right: 16,
                 top: MediaQuery.of(context).padding.top + 64,
-                child: _buildFloatingChip(
-                  'Geçmiş Sohbetler',
-                  icon: Icons.history,
-                  onTap: _toggleHistoryPanel,
+                child: Row(
+                  children: [
+                    // History chip
+                    _buildFloatingChip(
+                      'Geçmiş Sohbetler',
+                      icon: Icons.history,
+                      onTap: _toggleHistoryPanel,
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    // Usage notification chip (compact version)
+                    if (_showChat && chatProvider.usage != null && !chatProvider.isPremium)
+                      Expanded(
+                        child: _buildUsageChip(chatProvider.usage!),
+                      ),
+                  ],
                 ),
               ),
               
@@ -368,6 +439,256 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
   
+  Widget _buildUsageChip(ChatUsage usage) {
+    final remaining = usage.remainingMessages;
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // "Kalan X" container
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: -4,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withOpacity(0.08),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 0.5,
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.18),
+                      Colors.white.withOpacity(0.06),
+                      Colors.white.withOpacity(0.02),
+                    ],
+                    stops: const [0.0, 0.3, 1.0],
+                  ),
+                ),
+                child: Text(
+                  'Kalan $remaining',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withOpacity(0.95),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(width: 8),
+        
+        // "Yükselt" button with pulsing glow
+        _buildPremiumUpgradeButton(),
+      ],
+    );
+  }
+  
+  Widget _buildPremiumUpgradeButton() {
+    return GestureDetector(
+      onTap: () {
+        AnalyticsService().logUpgradeButtonClicked(source: 'usage_chip');
+        _showPaywall(context);
+      },
+      child: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 2000),
+        tween: Tween(begin: 0.0, end: 1.0),
+        builder: (context, value, child) {
+          // Subtle ping-pong animation (0 -> 1 -> 0)
+          final pulseValue = value < 0.5 ? value * 2 : (1 - value) * 2;
+          
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                // Base shadow
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -4,
+                ),
+                // Subtle premium glow shadow (reduced)
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.15 + pulseValue * 0.1),
+                  blurRadius: 8 + pulseValue * 4,
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFFFFD700).withOpacity(0.25 + pulseValue * 0.05),
+                        const Color(0xFFFFA500).withOpacity(0.2 + pulseValue * 0.05),
+                        const Color(0xFFFF8C00).withOpacity(0.15 + pulseValue * 0.03),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.4 + pulseValue * 0.15),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.workspace_premium,
+                        size: 16,
+                        color: const Color(0xFFFFD700).withOpacity(0.9),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Yükselt',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white.withOpacity(0.95),
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.5),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        onEnd: () {
+          // Restart animation infinitely
+          setState(() {});
+        },
+      ),
+    );
+  }
+
+  /// Dev button to reset chat limit (only visible in debug mode)
+  Widget _buildDevResetButton() {
+    return GestureDetector(
+      onTap: _isResettingLimit ? null : _resetChatLimit,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.blue.withOpacity(0.2),
+          border: Border.all(
+            color: Colors.blue.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isResettingLimit)
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            else
+              const Icon(
+                Icons.refresh,
+                size: 14,
+                color: Colors.white,
+              ),
+            const SizedBox(width: 4),
+            Text(
+              _isResettingLimit ? 'Resetting...' : 'Reset',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Reset chat limit for development testing
+  Future<void> _resetChatLimit() async {
+    setState(() => _isResettingLimit = true);
+    
+    try {
+      final deviceId = AuthService().deviceId;
+      if (deviceId != null) {
+        await ApiService().post('/user/reset-chat-limit', {
+          'deviceId': deviceId,
+        });
+        
+        if (mounted) {
+          // Reset the provider state
+          context.read<ChatProvider>().resetLimitState();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('✅ Limit reset! You have 3 messages again.'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isResettingLimit = false);
+      }
+    }
+  }
+
   Widget _buildFloatingChip(String label, {IconData? icon, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -463,11 +784,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                 child: Container(
+                  // SECONDARY LAYER - Lighter for further depth
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withOpacity(0.30), // LIGHTER base
                     border: Border(
                       right: BorderSide(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withOpacity(0.12),
                         width: 0.5,
                       ),
                     ),
@@ -475,9 +797,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(0.15),
-                        Colors.white.withOpacity(0.05),
-                        Colors.white.withOpacity(0.02),
+                        Colors.white.withOpacity(0.18), // LIGHTER gradient
+                        Colors.white.withOpacity(0.08),
+                        Colors.white.withOpacity(0.04),
                       ],
                       stops: const [0.0, 0.3, 1.0],
                     ),

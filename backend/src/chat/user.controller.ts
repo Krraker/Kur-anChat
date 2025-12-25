@@ -367,5 +367,124 @@ export class UserController {
 
     return { success: true, user };
   }
+
+  /**
+   * Update premium status (called by mobile app after RevenueCat purchase)
+   */
+  @Post('update-premium')
+  @HttpCode(200)
+  async updatePremiumStatus(
+    @Body() body: { userId: string; isPremium: boolean },
+  ) {
+    const { userId, isPremium } = body;
+
+    if (!userId) {
+      return { error: 'User ID is required' };
+    }
+
+    // Create tomorrow's reset time if new user
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const user = await this.prisma.user.upsert({
+      where: { id: userId },
+      update: {
+        isPremium,
+      },
+      create: {
+        id: userId,
+        isPremium,
+        dailyMessageCount: 0,
+        dailyMessageResetAt: tomorrow,
+      },
+    });
+
+    console.log(`✅ User ${userId} premium status updated to: ${isPremium}`);
+
+    return {
+      success: true,
+      isPremium: user.isPremium,
+      userId: user.id,
+    };
+  }
+
+  /**
+   * Get chat usage info (for displaying remaining messages)
+   */
+  @Get('chat-usage')
+  async getChatUsage(@Headers('x-device-id') deviceId: string) {
+    if (!deviceId) {
+      return { error: 'Device ID header required' };
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { deviceId },
+    });
+
+    if (!user) {
+      return { error: 'User not found' };
+    }
+
+    const FREE_TIER_LIMIT = 3;
+    const now = new Date();
+    const resetAt = new Date(user.dailyMessageResetAt);
+
+    // Check if need to reset
+    const needsReset = now >= resetAt;
+    const count = needsReset ? 0 : user.dailyMessageCount;
+    const remaining = user.isPremium ? -1 : Math.max(0, FREE_TIER_LIMIT - count);
+
+    return {
+      isPremium: user.isPremium,
+      remainingMessages: remaining,
+      resetAt: user.dailyMessageResetAt.toISOString(),
+      dailyLimit: FREE_TIER_LIMIT,
+    };
+  }
+
+  /**
+   * Reset chat limit for a user (Development only)
+   * Resets the daily message count to 0 and sets reset time to tomorrow
+   */
+  @Post('reset-chat-limit')
+  @HttpCode(200)
+  async resetChatLimit(@Body() body: { deviceId: string }) {
+    const { deviceId } = body;
+
+    if (!deviceId) {
+      return { error: 'Device ID is required' };
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { deviceId },
+    });
+
+    if (!user) {
+      return { error: 'User not found' };
+    }
+
+    // Reset count and set reset time to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    await this.prisma.user.update({
+      where: { deviceId },
+      data: {
+        dailyMessageCount: 0,
+        dailyMessageResetAt: tomorrow,
+      },
+    });
+
+    console.log(`🔧 DEV: Reset chat limit for user ${user.id} (${deviceId})`);
+
+    return {
+      success: true,
+      message: 'Chat limit reset successfully',
+      remainingMessages: 3,
+      resetAt: tomorrow.toISOString(),
+    };
+  }
 }
 

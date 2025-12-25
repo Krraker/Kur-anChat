@@ -22,6 +22,12 @@ export class QuranVerseDto {
   text_tr: string;
 }
 
+export class UsageInfoDto {
+  remainingMessages: number; // -1 = unlimited (premium)
+  isPremium: boolean;
+  resetAt: string; // ISO datetime string
+}
+
 export class ChatResponseDto {
   conversationId: string;
   response: {
@@ -29,6 +35,7 @@ export class ChatResponseDto {
     verses: QuranVerseDto[];
     disclaimer: string;
   };
+  usage?: UsageInfoDto; // Optional usage tracking info
 }
 
 

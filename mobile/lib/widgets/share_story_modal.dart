@@ -168,7 +168,7 @@ class _ShareStoryModalState extends State<ShareStoryModal> {
                 Expanded(
                   flex: 2,
                   child: _buildActionButton(
-                    icon: Icons.share_rounded,
+                    svgPath: 'assets/icons/ShareIcon.svg',
                     label: 'Paylaş',
                     isPrimary: true,
                     onTap: _shareStory,
@@ -432,7 +432,8 @@ class _ShareStoryModalState extends State<ShareStoryModal> {
   }
 
   Widget _buildActionButton({
-    required IconData icon,
+    IconData? icon,
+    String? svgPath,
     required String label,
     required VoidCallback onTap,
     bool isPrimary = false,
@@ -472,11 +473,22 @@ class _ShareStoryModalState extends State<ShareStoryModal> {
                     ),
                   )
                 else ...[
-                  Icon(
-                    icon,
-                    size: 20,
-                    color: isPrimary ? Colors.white : Colors.white.withOpacity(0.8),
-                  ),
+                  if (svgPath != null)
+                    SvgPicture.asset(
+                      svgPath,
+                      width: 20,
+                      height: 20,
+                      colorFilter: ColorFilter.mode(
+                        isPrimary ? Colors.white : Colors.white.withOpacity(0.8),
+                        BlendMode.srcIn,
+                      ),
+                    )
+                  else if (icon != null)
+                    Icon(
+                      icon,
+                      size: 20,
+                      color: isPrimary ? Colors.white : Colors.white.withOpacity(0.8),
+                    ),
                   const SizedBox(width: 8),
                   Text(
                     label,

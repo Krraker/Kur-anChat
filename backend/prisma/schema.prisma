@@ -49,6 +49,12 @@ model User {
   language        String   @default("tr")
   selectedMezhep  String?  @map("selected_mezhep")
   translation     String   @default("diyanet")
+  
+  // Chat usage limits (FREE TIER: 3 messages/day)
+  dailyMessageCount    Int      @default(0) @map("daily_message_count")
+  dailyMessageResetAt  DateTime @default(now()) @map("daily_message_reset_at")
+  isPremium            Boolean  @default(false) @map("is_premium")
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

@@ -1,5 +1,5 @@
-name: ayet_rehberi
-description: Kuran Chat Assistant - Flutter mobile application
+name: kuranchat
+description: Kur'an Chat - AI-Powered Quran Companion
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -14,6 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10
+  flutter_markdown: ^0.7.4+1
   
   # State Management
   provider: ^6.1.2
@@ -42,6 +43,13 @@ dependencies:
   just_audio: ^0.9.40
   audio_session: ^0.1.21
   
+  # Analytics
+  firebase_core: ^3.6.0
+  firebase_analytics: ^11.3.3
+  
+  # App Icon Generator
+  flutter_launcher_icons: ^0.14.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -96,4 +104,12 @@ flutter:
         - asset: assets/fonts/ChiswellMedian-Italic.otf
           style: italic
 
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/app_icon.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  background_color_ios: "#8BC34A"
 

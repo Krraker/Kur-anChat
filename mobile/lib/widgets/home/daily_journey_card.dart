@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../styles/styles.dart';
 import '../share_story_modal.dart';
@@ -661,12 +662,16 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.share_rounded,
-              size: 16,
-              color: isDarkTheme 
-                  ? Colors.red.shade400
-                  : Colors.white.withOpacity(0.8),
+            SvgPicture.asset(
+              'assets/icons/ShareIcon.svg',
+              width: 18,
+              height: 18,
+              colorFilter: ColorFilter.mode(
+                isDarkTheme 
+                    ? Colors.red.shade400
+                    : Colors.white.withOpacity(0.8),
+                BlendMode.srcIn,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
@@ -677,6 +682,24 @@ class _ExpandableDailyJourneyCardState extends State<ExpandableDailyJourneyCard>
                 color: isDarkTheme 
                     ? Colors.red.shade700
                     : Colors.white.withOpacity(0.9),
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Instagram logo
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF405DE6), Color(0xFF5851DB), Color(0xFF833AB4), Color(0xFFC13584), Color(0xFFE1306C), Color(0xFFFD1D1D)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: SvgPicture.asset(
+                'assets/icons/InstagramIcon.svg',
+                width: 14,
+                height: 14,
               ),
             ),
           ],

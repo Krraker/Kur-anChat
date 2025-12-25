@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendMessageDto, ChatResponseDto } from './dto/chat.dto';
 import { getSurahName } from './surah-names';
@@ -6,10 +6,97 @@ import { OpenAIService } from './openai.service';
 
 @Injectable()
 export class ChatService {
+  // FREE TIER: 3 messages per day
+  private readonly FREE_TIER_DAILY_LIMIT = 3;
+
   constructor(
     private prisma: PrismaService,
     private openaiService: OpenAIService,
   ) {}
+
+  /**
+   * Check if user can send a message (free tier limit check)
+   */
+  async checkMessageLimit(userId: string): Promise<{
+    canSend: boolean;
+    remainingMessages: number;
+    isPremium: boolean;
+    resetAt: Date;
+  }> {
+    // Get or create user
+    let user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      // Create user if not exists
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0); // Midnight
+
+      user = await this.prisma.user.create({
+        data: {
+          id: userId,
+          dailyMessageCount: 0,
+          dailyMessageResetAt: tomorrow,
+        },
+      });
+    }
+
+    // Premium users have unlimited messages
+    if (user.isPremium) {
+      return {
+        canSend: true,
+        remainingMessages: -1, // -1 means unlimited
+        isPremium: true,
+        resetAt: user.dailyMessageResetAt,
+      };
+    }
+
+    // Check if we need to reset the counter (new day)
+    const now = new Date();
+    const resetAt = new Date(user.dailyMessageResetAt);
+
+    if (now >= resetAt) {
+      // Reset counter for new day
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0); // Midnight
+
+      user = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          dailyMessageCount: 0,
+          dailyMessageResetAt: tomorrow,
+        },
+      });
+    }
+
+    // Check if user has exceeded limit
+    const remaining = this.FREE_TIER_DAILY_LIMIT - user.dailyMessageCount;
+    const canSend = remaining > 0;
+
+    return {
+      canSend,
+      remainingMessages: Math.max(0, remaining),
+      isPremium: false,
+      resetAt: user.dailyMessageResetAt,
+    };
+  }
+
+  /**
+   * Increment user's daily message count
+   */
+  async incrementMessageCount(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        dailyMessageCount: {
+          increment: 1,
+        },
+      },
+    });
+  }
 
   /**
    * Main method to process user messages with ChatGPT
@@ -17,6 +104,24 @@ export class ChatService {
   async processMessage(dto: SendMessageDto): Promise<ChatResponseDto> {
     const userId = dto.userId || 'demo-user';
     const { message, conversationId } = dto;
+
+    // ⭐ STEP 0: Check message limit BEFORE processing
+    const limitCheck = await this.checkMessageLimit(userId);
+
+    if (!limitCheck.canSend) {
+      console.log(`🚫 User ${userId} exceeded daily limit`);
+      throw new ForbiddenException({
+        message: 'Günlük mesaj limitine ulaştınız',
+        code: 'MESSAGE_LIMIT_EXCEEDED',
+        remainingMessages: 0,
+        resetAt: limitCheck.resetAt.toISOString(),
+        isPremium: limitCheck.isPremium,
+      });
+    }
+
+    console.log(
+      `✅ User ${userId} can send message (${limitCheck.remainingMessages} remaining)`,
+    );
 
     // Step 1: Get or create conversation
     let conversation;
@@ -89,9 +194,21 @@ export class ChatService {
       },
     });
 
+    // ⭐ STEP 8: Increment message count (only AFTER successful response)
+    await this.incrementMessageCount(userId);
+
+    // ⭐ STEP 9: Get updated limit info to return to client
+    const updatedLimit = await this.checkMessageLimit(userId);
+
     return {
       conversationId: conversation.id,
       response: responseContent,
+      // Include usage info in response
+      usage: {
+        remainingMessages: updatedLimit.remainingMessages,
+        isPremium: updatedLimit.isPremium,
+        resetAt: updatedLimit.resetAt.toISOString(),
+      },
     };
   }
 

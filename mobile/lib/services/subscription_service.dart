@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'auth_service.dart';
+import 'api_service.dart';
 
 /// Result type for purchase operations
 enum PurchaseResultType {
@@ -246,6 +248,43 @@ class SubscriptionService {
         return '6 Aylık';
       default:
         return '';
+    }
+  }
+
+  /// ⭐ Sync premium status with backend after purchase
+  Future<void> syncPremiumStatus() async {
+    if (!_isInitialized) {
+      debugPrint('SubscriptionService: Not initialized, cannot sync');
+      return;
+    }
+
+    try {
+      final userId = await AuthService().userId;
+      if (userId == null) {
+        debugPrint('SubscriptionService: No user ID, cannot sync');
+        return;
+      }
+
+      // Get current subscription status from RevenueCat
+      final customerInfo = await Purchases.getCustomerInfo();
+      final isPremium = customerInfo.entitlements.active.containsKey(_entitlementId);
+
+      debugPrint('SubscriptionService: Syncing premium status: $isPremium for user: $userId');
+
+      // Sync with backend
+      final apiService = ApiService();
+      await apiService.post('/user/update-premium', {
+        'userId': userId,
+        'isPremium': isPremium,
+      });
+
+      _isPremium = isPremium;
+      _customerInfo = customerInfo;
+
+      debugPrint('SubscriptionService: ✅ Premium status synced successfully');
+    } catch (e) {
+      debugPrint('SubscriptionService: ❌ Error syncing premium status: $e');
+      // Don't throw - this is not critical, user still has premium in RevenueCat
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/message.dart';
 import 'verse_card.dart';
 
@@ -198,14 +199,53 @@ class _MessageBubbleState extends State<MessageBubble>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Summary with letter-by-letter typing
-        Text(
-          _displayedText,
-          style: const TextStyle(
-            color: Color(0xFF3E3228),
-            fontSize: 15,
-            height: 1.5,
-            letterSpacing: 0.1,
+        // Summary with markdown formatting
+        MarkdownBody(
+          data: _displayedText,
+          selectable: false,
+          styleSheet: MarkdownStyleSheet(
+            p: const TextStyle(
+              color: Color(0xFF3E3228),
+              fontSize: 15,
+              height: 1.6,
+              letterSpacing: 0.1,
+            ),
+            h2: const TextStyle(
+              color: Color(0xFF2A1F1A),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              height: 1.4,
+              letterSpacing: -0.3,
+            ),
+            h3: const TextStyle(
+              color: Color(0xFF2A1F1A),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              height: 1.4,
+              letterSpacing: -0.2,
+            ),
+            strong: const TextStyle(
+              color: Color(0xFF2A1F1A),
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.1,
+            ),
+            em: const TextStyle(
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w500,
+            ),
+            listBullet: const TextStyle(
+              color: Color(0xFF3E3228),
+              fontSize: 15,
+              height: 1.6,
+            ),
+            code: TextStyle(
+              backgroundColor: const Color(0xFFE8DCC8).withOpacity(0.5),
+              color: const Color(0xFF2A1F1A),
+              fontFamily: 'monospace',
+              fontSize: 14,
+            ),
+            blockSpacing: 12.0,
+            listIndent: 24.0,
           ),
         ),
 

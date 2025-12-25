@@ -80,11 +80,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 
                 const SizedBox(height: 24),
                 
-                // XP Progress Bar
-                _buildXPBar(),
-                
-                const SizedBox(height: 24),
-                
                 // Achievements Preview
                 _buildAchievementsSection(),
                 
@@ -94,6 +89,21 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 _buildQuranProgressSection(),
                 
                 const SizedBox(height: 24),
+                
+                // My Old Chats Section
+                _buildOldChatsSection(),
+                
+                const SizedBox(height: 24),
+                
+                // My Old Prayings Section
+                _buildOldPrayingsSection(),
+                
+                const SizedBox(height: 24),
+                
+                // XP Progress Bar (Moved to bottom - Tecrübe puanı)
+                _buildXPBar(),
+                
+                const SizedBox(height: 16),
                 
                 // Stats Grid (Fallout-inspired)
                 _buildStatsGrid(),
@@ -1011,6 +1021,277 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOldChatsSection() {
+    // Sample chat history data
+    final List<Map<String, String>> recentChats = [
+      {'title': 'Namaz vakitleri hakkında', 'date': '2 gün önce', 'preview': 'Sabah namazının vakti...'},
+      {'title': 'Fatiha suresi tefsiri', 'date': '5 gün önce', 'preview': 'Bismillahirrahmanirrahim...'},
+      {'title': 'Ramazan ayı sorularım', 'date': '1 hafta önce', 'preview': 'Oruç tutarken...'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header - Matching achievements style
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 3,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: GlobalAppStyle.accentColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'ESKİ SOHBETLERİM',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${recentChats.length} sohbet',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: GlobalAppStyle.accentColor.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Chat List - Matching glassmorphism style
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withOpacity(0.06),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+              ),
+              child: Column(
+                children: recentChats.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final chat = entry.value;
+                  final isLast = index == recentChats.length - 1;
+                  
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: isLast
+                            ? BorderSide.none
+                            : BorderSide(
+                                color: Colors.white.withOpacity(0.05),
+                                width: 0.5,
+                              ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title and date in same row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                chat['title']!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              chat['date']!,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.35),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        // Preview text
+                        Text(
+                          chat['preview']!,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOldPrayingsSection() {
+    // Sample prayer requests data
+    final List<Map<String, dynamic>> recentPrayers = [
+      {'text': 'Ailem için sağlık duası', 'date': '3 gün önce', 'supporters': 24},
+      {'text': 'Sınav başarısı için dua', 'date': '1 hafta önce', 'supporters': 18},
+      {'text': 'Hastalara şifa duası', 'date': '2 hafta önce', 'supporters': 42},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header - Matching achievements style
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 3,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.pink.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'ESKİ DUALARIM',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${recentPrayers.length} dua',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.pink.shade300.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Prayer List - Matching glassmorphism style
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withOpacity(0.06),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+              ),
+              child: Column(
+                children: recentPrayers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final prayer = entry.value;
+                  final isLast = index == recentPrayers.length - 1;
+                  
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: isLast
+                            ? BorderSide.none
+                            : BorderSide(
+                                color: Colors.white.withOpacity(0.05),
+                                width: 0.5,
+                              ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Prayer text
+                        Text(
+                          prayer['text'] as String,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        // Supporters and date
+                        Row(
+                          children: [
+                            Text(
+                              '${prayer['supporters']} kişi dua etti',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              prayer['date'] as String,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.35),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

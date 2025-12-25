@@ -70,8 +70,9 @@ class _PaywallScreenState extends State<PaywallScreen>
       _weeklyPackage != null || _monthlyPackage != null || _yearlyPackage != null;
 
   // Demo prices
-  String get _monthlyPrice => isEnglish ? '\$9.99' : '₺249,99';
-  String get _yearlyPrice => isEnglish ? '\$59.99' : '₺1.499,99';
+  String get _weeklyPrice => isEnglish ? '\$2.99' : '₺29,99';
+  String get _monthlyPrice => isEnglish ? '\$9.99' : '₺99,99';
+  String get _yearlyPrice => isEnglish ? '\$59.99' : '₺999,99';
   int get _savingsPercent => 50; // 50% savings on yearly
 
   @override
@@ -169,23 +170,24 @@ class _PaywallScreenState extends State<PaywallScreen>
     if (_isDisposed) return;
     _rightCloudController.forward();
     
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (_isDisposed || !mounted) return;
-    _leftBigCloudController.forward();
-    
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (_isDisposed || !mounted) return;
-    _leftSmallCloudController.forward();
-    
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // Dove comes early - right after first cloud
+    await Future.delayed(const Duration(milliseconds: 400));
     if (_isDisposed || !mounted) return;
     _doveController.forward();
     
-    await Future.delayed(const Duration(milliseconds: 1800));
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (_isDisposed || !mounted) return;
+    _leftBigCloudController.forward();
+    
+    await Future.delayed(const Duration(milliseconds: 1000));
+    if (_isDisposed || !mounted) return;
+    _leftSmallCloudController.forward();
+    
+    await Future.delayed(const Duration(milliseconds: 1200));
     if (_isDisposed || !mounted) return;
     _starsController.forward();
     
-    await Future.delayed(const Duration(milliseconds: 3000));
+    await Future.delayed(const Duration(milliseconds: 2500));
     if (_isDisposed || !mounted) return;
     _startFloatingAnimations();
   }
@@ -450,7 +452,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                           child: Text(
                             isEnglish 
                                 ? 'Never Miss a Moment of Faith'
-                                : 'İmanın Bir Anını Kaçırma',
+                                : 'İman yolculuğunda hiçbir anı kaçırma',
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -463,7 +465,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
                         const SizedBox(height: 16),
 
-                        // Features list - reduced spacing
+                        // Features list - Block 1
                         _buildFeatureItem(isEnglish
                             ? 'Home Screen Widget with Personalized Verses'
                             : 'Kişiselleştirilmiş Ayetlerle Ana Ekran Widget\'ı'),
@@ -476,12 +478,13 @@ class _PaywallScreenState extends State<PaywallScreen>
                             ? 'Personalized Audio Daily Devotionals'
                             : 'Kişiselleştirilmiş Sesli Günlük Dualar'),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 54), // INCREASED spacing between blocks
 
+                        // Pricing containers - Block 2
                         // Trial toggle - compact
                         _buildTrialToggle(),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 4),
 
                         // Package options
                         if (_isLoading)
@@ -498,13 +501,13 @@ class _PaywallScreenState extends State<PaywallScreen>
                           // 7 days Free Trial option
                           _buildTrialPackageCard(),
                           
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 4),
                           
                           // Yearly option
                           _buildYearlyPackageCard(),
                         ],
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 4),
 
                         // Cancel anytime text
                         Center(
@@ -521,7 +524,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                       ],
                     ),
                   ),
@@ -529,7 +532,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
                 // Bottom section
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                   child: Column(
                     children: [
                       // Error message
@@ -548,7 +551,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                       // Try for Free button - FIRST
                       _isPurchasing
                           ? const SizedBox(
-                              height: 58,
+                              height: 62,
                               child: Center(
                                 child: CircularProgressIndicator(
                                   color: GlobalAppStyle.accentColor,
@@ -779,13 +782,13 @@ class _PaywallScreenState extends State<PaywallScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.white.withOpacity(0.5),
+              color: GlobalAppStyle.accentColor.withOpacity(0.6),
               width: 1.5,
             ),
           ),
           child: Icon(
             Icons.check,
-            color: Colors.white.withOpacity(0.7),
+            color: GlobalAppStyle.accentColor,
             size: 13,
           ),
         ),
@@ -806,7 +809,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
   Widget _buildTrialToggle() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
@@ -860,7 +863,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       onTap: () => setState(() => _selectedPlanIndex = 0),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected 
               ? Colors.white.withOpacity(0.12)
@@ -879,18 +882,18 @@ class _PaywallScreenState extends State<PaywallScreen>
             Text(
               isEnglish ? '7 days Free Trial' : '7 Gün Ücretsiz Deneme',
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               isEnglish 
                   ? 'Then $monthlyPrice per month. No payment now'
                   : 'Sonra ayda $monthlyPrice. Şimdi ödeme yok',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: Colors.white.withOpacity(0.6),
               ),
             ),
@@ -914,7 +917,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       onTap: () => setState(() => _selectedPlanIndex = 1),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected 
               ? Colors.white.withOpacity(0.12)
@@ -936,18 +939,18 @@ class _PaywallScreenState extends State<PaywallScreen>
                   Text(
                     isEnglish ? 'Yearly Access' : 'Yıllık Erişim',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     isEnglish 
                         ? 'billed yearly at $yearlyPrice'
                         : 'yıllık $yearlyPrice',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: Colors.white.withOpacity(0.6),
                     ),
                   ),
@@ -956,17 +959,18 @@ class _PaywallScreenState extends State<PaywallScreen>
             ),
             // Savings badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFFE53935), // Red badge
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 isEnglish ? 'SAVE -$savings%' : '%$savings TASARRUF',
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
@@ -981,7 +985,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       onTap: _purchaseSelectedPlan,
       child: Container(
         width: double.infinity,
-        height: 58,
+        height: 62,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16), // Less rounded corners
@@ -994,7 +998,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                   ? (isEnglish ? 'Try for Free' : 'Ücretsiz Dene')
                   : (isEnglish ? 'Subscribe Now' : 'Şimdi Abone Ol'),
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 19,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),

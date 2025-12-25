@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../styles/styles.dart';
 import '../widgets/app_gradient_background.dart';
 import '../widgets/audio/audio_player_widget.dart';
+import '../widgets/quran_info_banner.dart';
 import '../services/api_config.dart';
 import '../services/reading_progress_service.dart';
 import '../services/audio_service.dart';
@@ -18,7 +19,7 @@ class QuranScreen extends StatefulWidget {
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
-class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin {
+class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   String selectedSurah = 'Fatiha';
   int selectedSurahNumber = 1;
   String selectedTranslation = 'Diyanet';
@@ -42,6 +43,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   // Audio service
   final QuranAudioService _audioService = QuranAudioService();
   bool _showAudioPlayer = false;
+  
+  // Track if banner has been shown
+  bool _hasShownBanner = false;
+  
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -79,6 +86,26 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
     ));
   }
   
+  void _showInfoBannerIfNeeded() async {
+    // Only show once and only when this screen is actually visible
+    if (_hasShownBanner) return;
+    _hasShownBanner = true; // Set immediately to prevent multiple calls
+    
+    // Check if widget is still mounted and visible
+    if (!mounted) return;
+    
+    // Only show if user hasn't dismissed it before
+    final shouldShow = await QuranInfoBanner.shouldShow();
+    if (!shouldShow || !mounted) return;
+    
+    // Wait a bit for the screen to fully render
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    if (mounted && context.mounted) {
+      QuranInfoBanner.show(context, isAutoShow: true);
+    }
+  }
+  
   Future<void> _initProgress() async {
     await _progressService.init();
     if (mounted) setState(() {});
@@ -91,23 +118,25 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
   }
   
   void _markVisibleVersesAsRead() {
-    // Simplified: mark all loaded verses up to current scroll position as read
+    // Conservative approach: only mark verses that have been scrolled past
     if (_verses.isEmpty || !_scrollController.hasClients) return;
     
-    // Calculate approximately which verses are visible/read
+    // Calculate which verses have actually been read (scrolled past the middle of viewport)
     final scrollPosition = _scrollController.position.pixels;
     final viewportHeight = _scrollController.position.viewportDimension;
     
-    // Approximate verse height (including translation)
-    const approxVerseHeight = 120.0;
+    // Conservative verse height estimate (verses can be taller, so we're safe)
+    const approxVerseHeight = 150.0; // Increased from 120 to be more conservative
     final headerOffset = MediaQuery.of(context).padding.top + 132;
     
-    // Calculate last visible verse index
-    final lastVisible = ((scrollPosition + viewportHeight - headerOffset) / approxVerseHeight).ceil();
+    // Only mark verses that have scrolled past the MIDDLE of the viewport
+    // This ensures they've actually been seen
+    final middleOfViewport = scrollPosition + (viewportHeight * 0.5) - headerOffset;
+    final lastRead = (middleOfViewport / approxVerseHeight).floor(); // floor, not ceil
     
-    // Mark verses as read (up to current visible position)
+    // Mark verses as read (conservative approach)
     final versesToMark = <int>[];
-    for (int i = 0; i <= lastVisible && i < _verses.length; i++) {
+    for (int i = 0; i <= lastRead && i < _verses.length; i++) {
       final verseNum = _verses[i]['number'] as int? ?? (i + 1);
       if (!_visibleVerses.contains(verseNum)) {
         _visibleVerses.add(verseNum);
@@ -214,6 +243,13 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
           selectedSurah = _safeString(data['name'], _getSurahName(surahNumber));
           _isLoading = false;
         });
+        
+        // Reset scroll position after loading new surah
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(0);
+          }
+        });
       } else {
         setState(() {
           _error = 'Sureler yüklenemedi (${response.statusCode})';
@@ -230,6 +266,11 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Show info banner only when this screen is actually displayed
+    _showInfoBannerIfNeeded();
+    
     final headerHeight = MediaQuery.of(context).padding.top + 72;
     
     return Scaffold(
@@ -289,7 +330,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       },
                     ),
           
-          // Header blur overlay (same as other pages)
+          // Header blur overlay - MASTER LAYER (Darker/Closer)
           Positioned(
             left: 0,
             right: 0,
@@ -297,7 +338,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             child: IgnorePointer(
               child: ClipRect(
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     height: MediaQuery.of(context).padding.top + 72,
                     decoration: BoxDecoration(
@@ -305,16 +346,16 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.6),
-                          Colors.black.withOpacity(0.4),
-                          Colors.black.withOpacity(0.2),
+                          Colors.black.withOpacity(0.75), // DARKER for closer feel
+                          Colors.black.withOpacity(0.55),
+                          Colors.black.withOpacity(0.30),
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.3, 0.7, 1.0],
                       ),
                       border: Border(
                         bottom: BorderSide(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.12),
                           width: 0.5,
                         ),
                       ),
@@ -403,13 +444,15 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                     onPressed: () {},
                   ),
                   
-                  // More options
+                  // Info button - shows translation info banner
                   IconButton(
                     icon: Icon(
-                      Icons.more_horiz,
+                      Icons.info_outline,
                       color: Colors.white.withOpacity(0.9),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      QuranInfoBanner.show(context, isAutoShow: false);
+                    },
                   ),
                 ],
                 ),
@@ -448,6 +491,14 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
             right: 16,
             top: MediaQuery.of(context).padding.top + 64,
             child: _buildProgressIndicator(),
+          ),
+          
+          // Vertical reading progress bar on right edge
+          Positioned(
+            right: 0,
+            top: MediaQuery.of(context).padding.top + 72,
+            bottom: 140, // Above navigation
+            child: _buildVerticalProgressBar(),
           ),
           
           // Audio player island (Dynamic Island style - glassmorphism)
@@ -555,11 +606,12 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                 child: Container(
+                  // SECONDARY LAYER - Lighter for further depth
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withOpacity(0.30), // LIGHTER base
                     border: Border(
                       right: BorderSide(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withOpacity(0.12),
                         width: 0.5,
                       ),
                     ),
@@ -567,9 +619,9 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(0.15),
-                        Colors.white.withOpacity(0.05),
-                        Colors.white.withOpacity(0.02),
+                        Colors.white.withOpacity(0.18), // LIGHTER gradient
+                        Colors.white.withOpacity(0.08),
+                        Colors.white.withOpacity(0.04),
                       ],
                       stops: const [0.0, 0.3, 1.0],
                     ),
@@ -579,7 +631,7 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                       // Fixed header - stays still while content scrolls
                       Container(
                         width: double.infinity,
-                        padding: EdgeInsets.only(left: 12, right: 12, top: topPadding - 95, bottom: 12),
+                        padding: EdgeInsets.only(left: 16, right: 16, top: topPadding - 95, bottom: 16),
                         decoration: BoxDecoration(
                           border: Border(
                             bottom: BorderSide(
@@ -1091,6 +1143,70 @@ class _QuranScreenState extends State<QuranScreen> with SingleTickerProviderStat
                 size: 18,
                 color: Colors.white.withOpacity(0.9),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerticalProgressBar() {
+    if (_verses.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Get actual reading progress from progress service (stable, doesn't jump back)
+    final progress = _progressService.getSurahProgress(selectedSurahNumber);
+    
+    return Container(
+      width: 4,
+      margin: const EdgeInsets.only(right: 2),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              color: Colors.black.withOpacity(0.15),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.08),
+                width: 0.5,
+              ),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Stack(
+                  children: [
+                    // Progress fill
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        height: constraints.maxHeight * progress,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              GlobalAppStyle.accentColor.withOpacity(0.9),
+                              GlobalAppStyle.accentColor.withOpacity(0.7),
+                              GlobalAppStyle.accentColor.withOpacity(0.5),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: GlobalAppStyle.accentColor.withOpacity(0.3),
+                              blurRadius: 4,
+                              spreadRadius: 0.5,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

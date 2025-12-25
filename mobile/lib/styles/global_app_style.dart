@@ -386,6 +386,7 @@ class LiquidGlassButton extends StatelessWidget {
 }
 
 /// A liquid glass navigation bar widget
+/// MASTER LAYER - Darker for closer depth perception
 class LiquidGlassNavigationBar extends StatelessWidget {
   final Widget child;
   final double height;
@@ -413,8 +414,8 @@ class LiquidGlassNavigationBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(borderRadius),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 20,
+                color: Colors.black.withOpacity(0.35), // Stronger shadow for closer feel
+                blurRadius: 24,
                 offset: const Offset(0, 8),
                 spreadRadius: -4,
               ),
@@ -427,18 +428,18 @@ class LiquidGlassNavigationBar extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(borderRadius),
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.black.withOpacity(0.35), // DARKER base for closer layer
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.15), // Slightly brighter border
                     width: 0.5,
                   ),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(0.18),
-                      Colors.white.withOpacity(0.06),
-                      Colors.white.withOpacity(0.02),
+                      Colors.white.withOpacity(0.25), // DARKER gradient
+                      Colors.white.withOpacity(0.12),
+                      Colors.white.withOpacity(0.05),
                     ],
                     stops: const [0.0, 0.3, 1.0],
                   ),

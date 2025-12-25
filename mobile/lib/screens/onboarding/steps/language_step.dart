@@ -12,16 +12,16 @@ class LanguageStep extends StatelessWidget {
   });
 
   static const List<Map<String, String>> languageOptions = [
-    {'code': 'tr', 'name': 'Türkçe', 'flag': '🇹🇷', 'native': 'Türkçe'},
-    {'code': 'en', 'name': 'English', 'flag': '🇺🇸', 'native': 'English'},
-    {'code': 'ar', 'name': 'العربية', 'flag': '🇸🇦', 'native': 'Arabic'},
-    {'code': 'de', 'name': 'Deutsch', 'flag': '🇩🇪', 'native': 'German'},
-    {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷', 'native': 'French'},
-    {'code': 'id', 'name': 'Bahasa Indonesia', 'flag': '🇮🇩', 'native': 'Indonesian'},
-    {'code': 'ur', 'name': 'اردو', 'flag': '🇵🇰', 'native': 'Urdu'},
-    {'code': 'bn', 'name': 'বাংলা', 'flag': '🇧🇩', 'native': 'Bengali'},
-    {'code': 'ms', 'name': 'Bahasa Melayu', 'flag': '🇲🇾', 'native': 'Malay'},
-    {'code': 'ru', 'name': 'Русский', 'flag': '🇷🇺', 'native': 'Russian'},
+    {'code': 'tr', 'name': 'Türkçe', 'flag': 'TR', 'native': 'Türkçe'},
+    {'code': 'en', 'name': 'English', 'flag': 'EN', 'native': 'English'},
+    {'code': 'ar', 'name': 'العربية', 'flag': 'AR', 'native': 'Arabic'},
+    {'code': 'de', 'name': 'Deutsch', 'flag': 'DE', 'native': 'German'},
+    {'code': 'fr', 'name': 'Français', 'flag': 'FR', 'native': 'French'},
+    {'code': 'id', 'name': 'Bahasa Indonesia', 'flag': 'ID', 'native': 'Indonesian'},
+    {'code': 'ur', 'name': 'اردو', 'flag': 'PK', 'native': 'Urdu'},
+    {'code': 'bn', 'name': 'বাংলা', 'flag': 'BD', 'native': 'Bengali'},
+    {'code': 'ms', 'name': 'Bahasa Melayu', 'flag': 'MY', 'native': 'Malay'},
+    {'code': 'ru', 'name': 'Русский', 'flag': 'RU', 'native': 'Russian'},
   ];
 
   @override
@@ -128,10 +128,22 @@ class _LanguageCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Flag
-                Text(
-                  flag,
-                  style: const TextStyle(fontSize: 28),
+                // Flag code badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    flag,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withOpacity(0.9),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
                 
                 const SizedBox(width: 16),
